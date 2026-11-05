@@ -41,6 +41,7 @@ function createServer(opts = {}) {
 
     let rel = decodeURIComponent(url.pathname);
     if (rel === '/' || rel === '') rel = '/index.html';
+    if (rel === '/privacy') rel = '/privacy.html';
     const file = path.normalize(path.join(PUBLIC_DIR, rel));
     if (!file.startsWith(PUBLIC_DIR + path.sep)) { res.writeHead(403); res.end(); return; }
     fs.readFile(file, (err, data) => {
