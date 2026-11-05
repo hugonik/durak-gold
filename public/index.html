@@ -1456,10 +1456,17 @@
     const onlineCardCache = new Map();
     let onlineOppPool = [];
 
+    const PROD_WS = 'wss://durak-gold.onrender.com';
+    // Игра открыта прямо с нашего сервера (Render или локально) — подключаемся к тому же адресу
+    function isOwnServerHost() {
+        const h = location.hostname;
+        return h.endsWith('onrender.com') || h === 'localhost' || h === '127.0.0.1' || /^\d+\.\d+\.\d+\.\d+$/.test(h);
+    }
     function onlineServerUrl() {
         if (ONLINE_SERVER_URL) return ONLINE_SERVER_URL;
         if (location.protocol === 'http:' || location.protocol === 'https:') {
-            return (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host;
+            if (isOwnServerHost()) return (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host;
+            return PROD_WS;   // игра открыта не с сервера (например, внутри Claude) — подключаемся к основному
         }
         return null;
     }
@@ -1478,7 +1485,7 @@
         $('main-menu').style.display = 'none';
         $('online-menu').style.display = 'flex';
         showOnlineSetup();
-        onlineMsg(onlineServerUrl() ? '' : 'Онлайн работает, когда игра открыта по ссылке сервера');
+        onlineMsg(onlineServerUrl() ? 'Бесплатный сервер может просыпаться до минуты — это нормально' : 'Онлайн недоступен в этом режиме');
     }
     function showOnlineSetup() {
         $('online-setup').style.display = 'flex';
@@ -1874,10 +1881,13 @@
     // Кнопка «Играть онлайн» появляется, только если рядом есть сервер игры.
     (function onlineDetect() {
         const show = () => { $('btn-online-menu').style.display = ''; };
-        if (ONLINE_SERVER_URL) { show(); return; }
-        if (!(location.protocol === 'http:' || location.protocol === 'https:')) return;
+        const isWeb = location.protocol === 'http:' || location.protocol === 'https:';
+        if (!ONLINE_SERVER_URL && !isWeb) return;   // открыто как файл — сервера нет
+        show();
+        // «будим» бесплатный сервер заранее, чтобы к нажатию на кнопку он уже проснулся
         try {
-            fetch('/healthz', { cache: 'no-store' }).then(r => r.json()).then(j => { if (j && j.ok) show(); }).catch(() => {});
+            const url = (ONLINE_SERVER_URL || (isOwnServerHost() ? '' : PROD_WS)).replace(/^ws/, 'http') + '/healthz';
+            fetch(url, { cache: 'no-store', mode: 'no-cors' }).catch(() => {});
         } catch (e) {}
     })();
 
