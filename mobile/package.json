@@ -1,0 +1,17 @@
+{
+  "name": "durak-gold-mobile",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Capacitor-обёртка Durak Gold для Android/iOS. Веб-версия берётся из ../public",
+  "scripts": {
+    "prepare:www": "rm -rf www && mkdir www && cp -r ../public/. www/ && rm -f www/privacy.html"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/core": "^7.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^7.0.0"
+  }
+}

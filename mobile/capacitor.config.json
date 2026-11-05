@@ -1,0 +1,10 @@
+{
+  "appId": "com.hugonik.durakgold",
+  "appName": "Durak Gold",
+  "webDir": "www",
+  "backgroundColor": "#07080a",
+  "android": { "allowMixedContent": false },
+  "plugins": {
+    "SplashScreen": { "launchShowDuration": 0 }
+  }
+}

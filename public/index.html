@@ -1427,7 +1427,8 @@
     // ONLINE_SERVER_URL: '' — тот же адрес, с которого открыта игра (когда игру раздаёт
     // сам сервер). В мобильном приложении (Capacitor) сюда нужно прописать
     // адрес сервера, например 'wss://durak.example.com'.
-    const ONLINE_SERVER_URL = '';
+    const ONLINE_SERVER_URL = (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())
+        ? 'wss://durak-gold.onrender.com' : '';
     const ONLINE_SESSION_KEY = 'durak_online_session_v1';
 
     let onlineActive = false;   // true — на экране онлайн-партия
