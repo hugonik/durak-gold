@@ -1,0 +1,13 @@
+{
+  "name": "memento-mori-durak-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Онлайн-сервер для карточной игры Дурак (комнаты по ссылке)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test/engine.test.js && node test/server.test.js"
+  },
+  "engines": { "node": ">=18" },
+  "dependencies": { "ws": "^8.18.0" }
+}

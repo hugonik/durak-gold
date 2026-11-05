@@ -1,0 +1,2283 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" href="data:,">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Дурак: Durak Gold Edition (fixed)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --bg-color: #0b0c0e;
+        --accent-gold: #c5a059;
+        --gold-light: #e6c987;
+        --gold-dark: #8a6a2e;
+        --felt: #14181b;
+        --felt-light: #1d2428;
+        --font-display: 'Cinzel', 'Trajan Pro', Georgia, 'Times New Roman', serif;
+        --font-ui: 'Inter', -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        --card-width: 80px;
+        --card-height: 116px;
+        /* Мои карты крупнее, карты бота мельче — у каждой руки свой размер */
+        --me-w: 92px; --me-h: 133px;
+        --bot-w: 62px; --bot-h: 90px;
+    }
+    body {
+        margin: 0; padding: 0;
+        background-color: var(--bg-color);
+        color: #e0e0e0;
+        font-family: var(--font-ui);
+        display: flex; flex-direction: column; height: 100vh; height: 100dvh;
+        overflow: hidden; user-select: none;
+        -webkit-user-select: none;
+        -webkit-touch-callout: none;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+        overscroll-behavior: none;
+    }
+    .menu-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: radial-gradient(circle at center, #1c1e24 0%, #0f1012 100%);
+        display: flex; flex-direction: column; justify-content: center; align-items: center;
+        z-index: 200;
+    }
+    .menu-title {
+        font-family: var(--font-display);
+        font-size: 38px; letter-spacing: 6px; text-transform: uppercase; font-weight: 800;
+        background: linear-gradient(180deg, var(--gold-light) 0%, var(--accent-gold) 55%, var(--gold-dark) 100%);
+        -webkit-background-clip: text; background-clip: text; color: transparent;
+        margin-bottom: 10px; filter: drop-shadow(0 2px 14px rgba(197, 160, 89, 0.25));
+    }
+    .menu-subtitle {
+        font-size: 12px; color: #7d7a72; letter-spacing: 4px; margin-bottom: 44px; text-transform: uppercase;
+        display: flex; align-items: center; gap: 12px;
+    }
+    .menu-subtitle::before, .menu-subtitle::after {
+        content: ''; width: 34px; height: 1px; background: linear-gradient(90deg, transparent, var(--accent-gold));
+    }
+    .menu-subtitle::after { transform: scaleX(-1); }
+    .menu-options { display: flex; flex-direction: column; gap: 15px; width: 260px; }
+    .collection-btn { border-style: dashed; opacity: 0.85; }
+
+    /* ===== Онлайн ===== */
+    .seg { display: flex; border: 1px solid rgba(197,160,89,0.35); border-radius: 999px; overflow: hidden; }
+    .seg-btn { flex: 1; font-family: var(--font-ui); font-weight: 600; font-size: 13px; letter-spacing: 0.5px; padding: 10px 6px; background: transparent; color: #8d887b; border: none; cursor: pointer; transition: all 0.2s; }
+    .seg-btn.active { background: linear-gradient(180deg, var(--gold-light), var(--accent-gold) 60%, var(--gold-dark)); color: #17120a; }
+    .online-or { text-align: center; font-size: 11px; letter-spacing: 3px; color: #6f6c64; text-transform: uppercase; margin: 6px 0 -4px; }
+    .online-join { display: flex; gap: 10px; }
+    .online-join input {
+        flex: 1; min-width: 0; text-align: center; font-family: var(--font-display); font-weight: 700; font-size: 18px; letter-spacing: 4px; text-transform: uppercase;
+        background: rgba(255,255,255,0.04); color: var(--gold-light); border: 1px solid rgba(197,160,89,0.35); border-radius: 999px; padding: 10px 8px;
+        -webkit-user-select: text; user-select: text; outline: none;
+    }
+    .online-join input:focus { border-color: var(--accent-gold); }
+    .online-join .menu-btn { width: auto; padding: 10px 18px; }
+    .online-code { font-family: var(--font-display); font-weight: 800; font-size: 42px; letter-spacing: 10px; text-align: center; padding-left: 10px;
+        background: linear-gradient(180deg, var(--gold-light) 0%, var(--accent-gold) 55%, var(--gold-dark) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .online-hint { text-align: center; font-size: 13px; color: #8d887b; line-height: 1.45; }
+    .online-msg { min-height: 18px; margin-top: 16px; font-size: 13px; color: #d9a05b; text-align: center; max-width: 280px; }
+    .online-spinner { width: 22px; height: 22px; border: 2px solid rgba(197,160,89,0.25); border-top-color: var(--accent-gold); border-radius: 50%; margin: 0 auto; animation: spin 0.9s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .btn-end-leave { margin-top: 14px; }
+
+    .collection-grid {
+        display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px;
+        width: min(90vw, 360px); max-height: 55vh; overflow-y: auto; padding: 6px;
+    }
+    .collection-item { display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; }
+    .collection-swatch {
+        width: 100px; height: 145px; border-radius: 8px; background-size: 100% 100%; background-repeat: no-repeat;
+        border: 2px solid #333; box-shadow: 0 4px 12px rgba(0,0,0,0.5); transition: border-color 0.2s, transform 0.2s;
+        position: relative;
+    }
+    .collection-item.selected .collection-swatch { border-color: var(--accent-gold); box-shadow: 0 0 16px rgba(197,160,89,0.5); transform: translateY(-3px); }
+    .collection-item.locked .collection-swatch { opacity: 0.45; filter: grayscale(0.6); }
+    .collection-item.locked .collection-swatch::after {
+        content: "🔒"; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 22px;
+    }
+    .collection-name { font-size: 12px; color: #ccc; text-align: center; letter-spacing: 0.5px; }
+    .collection-item.selected .collection-name { color: var(--accent-gold); font-weight: 600; }
+    .collection-price { font-size: 10px; color: #888; }
+
+    .menu-btn {
+        background: linear-gradient(180deg, #1b1e22 0%, #121417 100%); color: #d9d4c7;
+        border: 1px solid rgba(197, 160, 89, 0.35);
+        padding: 15px 20px; border-radius: 10px; font-family: var(--font-display); font-size: 15px; font-weight: 700;
+        cursor: pointer; letter-spacing: 2px; transition: all 0.25s ease; text-align: center;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 4px 14px rgba(0,0,0,0.4);
+    }
+    .menu-btn:active { background: linear-gradient(180deg, var(--gold-light), var(--accent-gold)); color: #15110a; border-color: var(--gold-light); }
+    .header {
+        padding: 10px 20px; padding-top: calc(10px + env(safe-area-inset-top, 0px));
+        display: flex; justify-content: space-between; align-items: center;
+        background: linear-gradient(180deg, #14161a 0%, #0d0e11 100%);
+        border-bottom: 1px solid rgba(197, 160, 89, 0.25);
+        box-shadow: 0 2px 12px rgba(0,0,0,0.5);
+        gap: 8px;
+    }
+    .title { font-family: var(--font-display); font-size: 14px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent-gold); font-weight: 700;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 45vw; }
+    .status {
+        font-size: 12px; color: #b8b2a2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 30vw; flex-shrink: 0;
+        background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); padding: 4px 10px; border-radius: 999px;
+    }
+    .btn-small {
+        background: rgba(255,255,255,0.03); border: 1px solid rgba(197, 160, 89, 0.3); color: #b8b2a2;
+        padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-small:active { border-color: var(--accent-gold); color: var(--accent-gold); }
+    .game-board {
+        overflow: hidden;
+        flex: 1; display: flex; flex-direction: column; justify-content: space-between;
+        padding: 20px; position: relative;
+        /* Сукно: мягкий свет в центре + виньетка по краям + мелкое зерно (SVG-шум) */
+        background:
+            radial-gradient(ellipse at 50% 45%, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0) 55%),
+            radial-gradient(ellipse at center, var(--felt-light) 0%, var(--felt) 55%, #08090a 100%),
+            var(--felt);
+    }
+    .game-board::before {
+        content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0.35; mix-blend-mode: overlay;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    }
+    .hand, .table-area { position: relative; z-index: 1; }
+    .deck-area, .bito-area { z-index: 1; }
+    .hand { display: flex; justify-content: center; height: 120px; align-items: center; }
+    #player-hand { --card-width: var(--me-w); --card-height: var(--me-h); height: calc(var(--me-h) + 26px); touch-action: none; }
+    #bot-hand { --card-width: var(--bot-w); --card-height: var(--bot-h); height: calc(var(--bot-h) + 14px); }
+    #player-hand .card { touch-action: none; }
+    .card {
+        width: var(--card-width); height: var(--card-height); border-radius: 8px; background: #fdfdfd;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5); box-sizing: border-box; position: relative;
+        cursor: pointer; transition: transform 0.25s ease, box-shadow 0.25s ease, opacity 0.3s ease; border: 1px solid #d0d0d0;
+        flex-shrink: 0;
+        transform: translate(var(--deal-x, 0px), var(--deal-y, 0px)) scale(var(--deal-scale, 1)) rotate(var(--fan-rotate, 0deg)) translateY(var(--fan-lift, 0px));
+    }
+    .hand .card:not(:first-child) { margin-left: var(--hand-gap, 8px); }
+    .card:active {
+        transform: translate(var(--deal-x, 0px), var(--deal-y, 0px)) scale(var(--deal-scale, 1)) rotate(var(--fan-rotate, 0deg)) translateY(calc(var(--fan-lift, 0px) - 10px)) scale(1.03);
+        box-shadow: 0 6px 16px rgba(197, 160, 89, 0.35); z-index: 10;
+    }
+
+    /* Перетаскивание карты пальцем */
+    .drag-clone { position: fixed; margin: 0 !important; z-index: 500; pointer-events: none; transition: none !important;
+        box-shadow: 0 14px 30px rgba(0,0,0,0.65), 0 0 18px rgba(197,160,89,0.45) !important; }
+    .drag-clone.returning { transition: left 0.22s ease, top 0.22s ease, transform 0.22s ease, opacity 0.22s ease !important; }
+    .card-pair.drop-ok .attack .card { box-shadow: 0 0 0 2px rgba(230,201,135,0.6), 0 0 14px rgba(197,160,89,0.55); }
+    .card-pair.drop-hover .attack .card { box-shadow: 0 0 0 3px var(--gold-light), 0 0 24px rgba(230,201,135,0.95); }
+    #player-hand .card.dragging { opacity: 0.25; }
+    .toast {
+        position: fixed; left: 50%; top: 40%; transform: translate(-50%, 8px); z-index: 600; pointer-events: none;
+        max-width: min(82vw, 320px); text-align: center; white-space: pre-line; font-size: 14px; font-weight: 600; line-height: 1.35; color: #f1d9d4;
+        background: rgba(40, 14, 14, 0.94); border: 1px solid rgba(214, 96, 84, 0.65); border-radius: 14px; padding: 10px 16px;
+        box-shadow: 0 8px 26px rgba(0,0,0,0.6); opacity: 0; transition: opacity 0.18s ease, transform 0.18s ease;
+    }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+    /* Реплики над игроками: «Беру», «Бито», «Перевожу» */
+    .speech {
+        position: absolute; left: 50%; z-index: 30; pointer-events: none; white-space: nowrap;
+        transform: translate(-50%, 6px) scale(0.92); opacity: 0; transition: opacity 0.18s ease, transform 0.18s ease;
+        background: rgba(16, 17, 20, 0.96); color: var(--gold-light); border: 1px solid rgba(197, 160, 89, 0.65); border-radius: 14px;
+        padding: 6px 16px; font-family: var(--font-display); font-weight: 700; font-size: 14px; letter-spacing: 1.5px; text-transform: uppercase;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
+    }
+    .speech.show { opacity: 1; transform: translate(-50%, 0) scale(1); }
+    .speech::after { content: ''; position: absolute; left: 50%; width: 9px; height: 9px; background: inherit; border: inherit; transform: translateX(-50%) rotate(45deg); }
+    #speech-bot { top: calc(var(--bot-h) + 28px); }
+    #speech-bot::after { top: -6px; border-right: none; border-bottom: none; }
+    #speech-me { bottom: calc(var(--me-h) + 42px); }
+    #speech-me::after { bottom: -6px; border-left: none; border-top: none; }
+
+    /* Валюта «$» */
+    .wallet { font-family: var(--font-display); font-weight: 800; font-size: 20px; letter-spacing: 2px; color: var(--gold-light);
+        background: rgba(197,160,89,0.08); border: 1px solid rgba(197,160,89,0.4); border-radius: 999px; padding: 6px 18px; margin-bottom: 22px; }
+    .wallet small { font-family: var(--font-ui); font-weight: 600; font-size: 10px; letter-spacing: 2px; color: #8d887b; margin-left: 8px; text-transform: uppercase; }
+    .collection-item.buying .collection-price { color: var(--gold-light); font-weight: 700; }
+    .collection-item.locked.buying .collection-swatch { opacity: 0.85; filter: none; border-color: var(--gold-light); }
+    .reward { font-family: var(--font-display); font-weight: 800; font-size: 22px; letter-spacing: 2px; color: var(--gold-light); margin: -12px 0 20px; white-space: pre-line; line-height: 1.35; }
+    .reward:empty { display: none; }
+    .reward small { display: block; font-family: var(--font-ui); font-size: 12px; letter-spacing: 1px; font-weight: 600; color: #8d887b; }
+    #modal-desc { white-space: pre-line; }
+    .dev-tools { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+    .dev-tools .btn-small { text-align: center; border-style: dashed; }
+    .toast.good { color: var(--gold-light); background: rgba(22, 18, 8, 0.95); border-color: rgba(197,160,89,0.75); }
+    .card.red { color: #d32f2f; }
+    .card.black { color: #212121; }
+
+    /* Уголки-индексы (ранг + масть), как в классических игральных картах */
+    .corner { position: absolute; display: flex; flex-direction: column; align-items: center; line-height: 1; font-weight: 800; }
+    .corner-top { top: calc(var(--card-width) * 0.07); left: calc(var(--card-width) * 0.09); font-size: calc(var(--card-width) * 0.2); }
+    .corner-bottom { bottom: calc(var(--card-width) * 0.07); right: calc(var(--card-width) * 0.09); font-size: calc(var(--card-width) * 0.2); transform: rotate(180deg); }
+    .corner-suit { font-size: 0.85em; margin-top: 1px; }
+
+    /* Центр карты: крупный символ масти для чисел, эмблема в кольце для фигур/туза */
+    .pip-suit { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: calc(var(--card-width) * 0.46); opacity: 0.92; }
+    .face-emblem { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+    .face-emblem::before {
+        content: ''; position: absolute; width: 62%; height: 62%; border-radius: 50%;
+        border: calc(var(--card-width) * 0.03) solid var(--accent-gold); opacity: 0.55;
+    }
+    .face-rank { font-size: calc(var(--card-width) * 0.34); font-weight: 800; z-index: 1; }
+    .face-suit { font-size: calc(var(--card-width) * 0.2); z-index: 1; }
+
+    /* Рубашка карты подставляется через переменную --card-back-image (см. систему
+       коллекции рубашек в JS) — так переключение дизайна не требует ничего,
+       кроме одной строчки в JS. */
+    .card.back {
+        background-image: var(--card-back-image);
+        background-size: 100% 100%;
+        background-repeat: no-repeat;
+        border: none;
+        cursor: default;
+    }
+    /* Колода и козырь идут в ряд (flex), а не друг на друге абсолютным позиционированием —
+       раньше карта колоды почти полностью перекрывала повёрнутый козырь. */
+    .deck-area { position: absolute; left: 30px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; }
+    .bito-area { position: absolute; right: calc(var(--card-width) * -0.72); top: 50%; transform: translateY(-50%); width: var(--card-width); height: var(--card-height); pointer-events: none; }
+    .bito-stack { position: relative; width: var(--card-width); height: var(--card-height); }
+    .bito-stack .card { position: absolute; top: 0; left: 0; cursor: default; }
+    .bito-count { position: absolute; top: 100%; left: 0; width: calc(var(--card-width) * 0.28); margin-top: 6px; font-size: 11px; font-weight: 700; color: #8d887b; text-align: center; text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
+    /* колода (повёрнута на 90°) закрывает ровно половину козыря: визуальный низ колоды = H - W/2 от её layout-низа */
+    .trump-card { position: static; order: 2; z-index: 1; flex-shrink: 0; margin-top: calc(-1 * (var(--card-height) - var(--card-width) / 2)); }
+    .deck-stack { position: relative; z-index: 2; flex-shrink: 0; order: 1; transform: rotate(90deg); }
+    .deck-count { position: absolute; bottom: -22px; left: 50%; transform: translateX(-50%); font-size: 13px; font-weight: 700; color: #b8b2a2; letter-spacing: 0.5px; white-space: nowrap; order: 3; margin-top: 8px; text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
+    .trump-badge { font-size: calc(var(--card-width) * 0.5); line-height: 1; font-weight: 700; order: 3; }
+    .table-area {
+        flex: 1; min-height: 0;
+        margin-left: calc(var(--card-height) + 60px);
+        margin-right: 40px;
+        display: grid; grid-template-columns: repeat(3, max-content); grid-auto-rows: max-content;
+        gap: 14px 12px; padding: 8px; align-content: center; justify-content: center;
+        transition: all 0.3s ease; overflow: hidden;
+    }
+    .table-area.animate-bito { opacity: 0.2; transform: translateX(100px) scale(0.9); }
+    /* Пары карт на столе всегда в одну строку — при нехватке места ужимаются
+       внахлёст через --table-gap (считается в JS), так же как карты в руке.
+       Раньше при переносе на новые строки стол "распухал" по высоте и
+       выталкивал кнопки за пределы экрана. */
+    .card-pair { position: relative; width: calc(var(--card-width) + 20px); height: calc(var(--card-height) + 20px); flex-shrink: 0; }
+    .card-pair .attack { position: absolute; top: 0; left: 0; z-index: 2; }
+    .card-pair .defend { position: absolute; top: 15px; left: 15px; z-index: 3; animation: playCard 0.2s ease-out; }
+    @keyframes playCard { from { transform: scale(1.1); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .controls {
+        padding: 14px; padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); display: flex; justify-content: center; gap: 14px; flex-wrap: wrap;
+        background: linear-gradient(180deg, #0d0e11 0%, #090a0c 100%); border-top: 1px solid rgba(197, 160, 89, 0.22);
+    }
+    .btn {
+        font-family: var(--font-display); font-size: 14px; font-weight: 700; letter-spacing: 2px; cursor: pointer; transition: all 0.2s;
+        min-width: 112px; padding: 11px 22px; border-radius: 999px;
+        background: linear-gradient(180deg, #23272c 0%, #15181c 100%); color: #d9d4c7;
+        border: 1px solid rgba(197, 160, 89, 0.35);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.07), 0 4px 12px rgba(0,0,0,0.45);
+    }
+    /* Главное действие — золотая кнопка, "Взять" — приглушённая красная, чтобы не путать */
+    #btn-bito:not(:disabled) {
+        background: linear-gradient(180deg, var(--gold-light) 0%, var(--accent-gold) 60%, var(--gold-dark) 100%);
+        color: #17120a; border-color: var(--gold-light);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.45), 0 4px 16px rgba(197,160,89,0.3);
+    }
+    #btn-take:not(:disabled), #btn-give-to-bot:not(:disabled) {
+        background: linear-gradient(180deg, #5a1a22 0%, #3a0f15 100%); color: #f1d9d9; border-color: rgba(200, 80, 90, 0.55);
+    }
+    .btn:active:not(:disabled) { transform: translateY(1px) scale(0.98); filter: brightness(1.12); }
+    .btn:disabled { opacity: 0.35; cursor: not-allowed; box-shadow: none; }
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); display: none; justify-content: center; align-items: center; z-index: 100; backdrop-filter: blur(5px); }
+    .modal-overlay { animation: overlayFade 0.35s ease; }
+    @keyframes overlayFade { from { opacity: 0; } to { opacity: 1; } }
+    .modal { background: #16181c; border: 1px solid var(--accent-gold); padding: 40px; border-radius: 12px; text-align: center; box-shadow: 0 0 30px rgba(197, 160, 89, 0.2); max-width: 400px; width: 90%; animation: modalPop 0.45s cubic-bezier(.2,1.4,.4,1); }
+    @keyframes modalPop { from { transform: scale(0.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .modal.win { box-shadow: 0 0 50px rgba(197, 160, 89, 0.5); }
+    .modal.win h2 { animation: winPulse 1.6s ease-in-out infinite; }
+    @keyframes winPulse { 0%,100% { text-shadow: 0 0 10px rgba(197,160,89,0.4); } 50% { text-shadow: 0 0 25px rgba(197,160,89,0.9); } }
+    .confetti-piece {
+        position: fixed; top: -30px; font-size: 22px; pointer-events: none; z-index: 150;
+        animation: confettiFall linear forwards;
+    }
+    @keyframes confettiFall {
+        0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+        100% { transform: translateY(110vh) rotate(360deg); opacity: 0.3; }
+    }
+    .modal h2 { font-family: var(--font-display); font-size: 28px; font-weight: 800; color: var(--accent-gold); margin-top: 0; letter-spacing: 3px; text-transform: uppercase; }
+    .modal p { font-size: 16px; color: #aaa; margin-bottom: 30px; }
+    .modal .btn-restart { font-family: var(--font-display); background: linear-gradient(180deg, var(--gold-light), var(--accent-gold) 60%, var(--gold-dark)); color: #17120a; border: none; padding: 13px 30px; font-size: 15px; font-weight: 800; letter-spacing: 2px; border-radius: 999px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 4px 16px rgba(197,160,89,0.3); }
+    .modal .btn-restart:active { transform: scale(1.05); box-shadow: 0 0 15px rgba(197, 160, 89, 0.5); }
+
+    /* Hover-эффекты — только на устройствах с настоящим курсором (мышь), чтобы на тач-экранах
+       ничего не "залипало" после тапа */
+    @media (hover: hover) and (pointer: fine) {
+        .menu-btn:hover { background: var(--accent-gold); color: #111; border-color: var(--accent-gold);
+            box-shadow: 0 0 20px rgba(197, 160, 89, 0.3); transform: translateY(-2px); }
+        .btn-small:hover { border-color: var(--accent-gold); color: var(--accent-gold); }
+        .card:hover { transform: translate(var(--deal-x, 0px), var(--deal-y, 0px)) scale(var(--deal-scale, 1)) rotate(var(--fan-rotate, 0deg)) translateY(calc(var(--fan-lift, 0px) - 14px)) scale(1.05); box-shadow: 0 8px 20px rgba(197, 160, 89, 0.3); z-index: 10; }
+        .btn:hover:not(:disabled) { background: var(--accent-gold); color: #111; border-color: var(--accent-gold); box-shadow: 0 0 12px rgba(197, 160, 89, 0.4); }
+        .modal .btn-restart:hover { transform: scale(1.05); box-shadow: 0 0 15px rgba(197, 160, 89, 0.5); }
+    }
+
+    /* ===== Мобильный портрет (телефоны) ===== */
+    @media (max-width: 480px) {
+        :root { --card-width: 62px; --card-height: 90px; --me-w: 72px; --me-h: 104px; --bot-w: 46px; --bot-h: 67px; }
+        .game-board { padding: 8px; }
+        .menu-title { font-size: 26px; letter-spacing: 2px; }
+        .menu-subtitle { font-size: 11px; margin-bottom: 28px; }
+        .menu-options { width: min(84vw, 280px); }
+        .menu-btn { padding: 12px 16px; font-size: 14px; }
+        .header { padding: 8px 10px; padding-top: calc(8px + env(safe-area-inset-top, 0px)); }
+        .title { font-size: 11px; letter-spacing: 1px; max-width: 38vw; }
+        .status { font-size: 11px; max-width: 32vw; }
+        .btn-small { padding: 5px 9px; font-size: 10px; }
+
+        /* Колода/козырь и бито — по вертикальному центру сбоку (не в углу).
+           Раньше это ломало стол, потому что карты на столе не умели
+           сжиматься при нехватке ширины — теперь умеют (см. fitTable в JS),
+           так что стол всегда остаётся в одну строку и не может вытолкнуть
+           кнопки за экран, сколько бы карт на нём ни было. Слева отступ
+           больше, чем справа — колода повёрнута на 90°, и без запаса под
+           этот поворот угол обрезает краем экрана. */
+        .deck-area { left: 16px; gap: 0; }
+        .deck-count { font-size: 10px; }
+                .bito-count { font-size: 10px; }
+
+        .table-area {
+            margin-left: calc(var(--card-height) * 0.7 + 24px);
+            margin-right: calc(var(--card-width) * 0.28 + 6px);
+            margin-top: 8px; margin-bottom: 0;
+            padding: 4px; gap: 8px 6px;
+        }
+        .card-pair { width: calc(var(--card-width) + 14px); height: calc(var(--card-height) + 14px); }
+        .card-pair .defend { top: 10px; left: 10px; }
+        .controls { padding: 8px; gap: 8px; }
+        .btn { padding: 8px 14px; font-size: 12px; }
+        .modal { padding: 26px 18px; width: 78%; max-width: 300px; }
+        .modal h2 { font-size: 22px; }
+        .modal p { font-size: 13px; margin-bottom: 20px; }
+    }
+
+    /* ===== Телефон в альбомной ориентации: мало высоты, чуть больше ширины ===== */
+    @media (max-height: 480px) and (orientation: landscape) {
+        :root { --card-width: 56px; --card-height: 82px; --me-w: 62px; --me-h: 90px; --bot-w: 42px; --bot-h: 61px; }
+        .game-board { padding: 6px; }
+        .header { padding: 4px 12px; padding-top: calc(4px + env(safe-area-inset-top, 0px)); }
+        .title { font-size: 10px; }
+        .status { font-size: 10px; }
+        .deck-area { left: 14px; gap: 0; }
+        .deck-count { font-size: 9px; }
+                .bito-count { font-size: 9px; }
+        .table-area {
+            margin-left: calc(var(--card-height) + 26px);
+            margin-right: calc(var(--card-width) * 0.28 + 12px);
+            margin-top: 6px; margin-bottom: 0;
+            padding: 6px;
+        }
+        .controls { padding: 6px; gap: 6px; }
+        .btn { padding: 6px 12px; font-size: 11px; }
+    }
+</style>
+</head>
+<body>
+
+<div class="menu-overlay" id="main-menu">
+    <div class="wallet" id="wallet-main"></div>
+    <div class="menu-title" id="menu-title-main">Durak Gold</div>
+    <div class="menu-subtitle">Карточная игра • Дурак</div>
+    <div class="menu-options">
+        <button class="menu-btn" onclick="startGame('classic')">Подкидной Дурак</button>
+        <button class="menu-btn" onclick="startGame('transfer')">Переводной Дурак</button>
+        <button class="menu-btn" id="btn-online-menu" style="display:none;" onclick="openOnlineMenu()">🌐 Играть онлайн</button>
+        <button class="menu-btn collection-btn" onclick="openCollection()">🎴 Рубашка карт</button>
+        <button class="menu-btn collection-btn" id="btn-sound" onclick="toggleSound()">🔊 Звук: вкл</button>
+        <div class="dev-tools" id="dev-tools" style="display:none;">
+            <button class="btn-small" onclick="devAddCoins()">🛠 +1000 $</button>
+            <button class="btn-small" onclick="devUnlockAll()">🛠 Открыть все рубашки</button>
+            <button class="btn-small" onclick="devResetProgress()">🛠 Сбросить прогресс (как новый игрок)</button>
+        </div>
+    </div>
+</div>
+
+<div class="menu-overlay" id="collection-menu" style="display:none;">
+    <div class="wallet" id="wallet-collection" style="margin-bottom:12px;"></div>
+    <div class="menu-title" style="font-size:26px;">Моя коллекция</div>
+    <div class="menu-subtitle">Выберите рубашку карт</div>
+    <div class="collection-grid" id="collection-grid"></div>
+    <button class="btn-small" style="margin-top:24px;" onclick="closeCollection()">← Назад</button>
+</div>
+
+<div class="menu-overlay" id="online-menu" style="display:none;">
+    <div class="menu-title" style="font-size:26px;">Онлайн</div>
+    <div class="menu-subtitle" id="online-subtitle">Игра с другом по ссылке</div>
+
+    <div class="menu-options" id="online-setup">
+        <div class="seg" id="seg-mode">
+            <button class="seg-btn active" data-v="classic" onclick="onlineSetMode('classic')">Подкидной</button>
+            <button class="seg-btn" data-v="transfer" onclick="onlineSetMode('transfer')">Переводной</button>
+        </div>
+        <div class="seg" id="seg-deck">
+            <button class="seg-btn" data-v="24" onclick="onlineSetDeck(24)">24</button>
+            <button class="seg-btn active" data-v="36" onclick="onlineSetDeck(36)">36</button>
+            <button class="seg-btn" data-v="52" onclick="onlineSetDeck(52)">52</button>
+        </div>
+        <button class="menu-btn" onclick="onlineCreate()">Создать комнату</button>
+        <div class="online-or">или войти по коду</div>
+        <div class="online-join">
+            <input id="online-code" maxlength="5" placeholder="КОД" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false">
+            <button class="menu-btn" onclick="onlineJoinByCode()">Войти</button>
+        </div>
+    </div>
+
+    <div class="menu-options" id="online-wait" style="display:none;">
+        <div class="online-code" id="online-code-show">-----</div>
+        <div class="online-hint" id="online-wait-hint">Отправьте ссылку другу — игра начнётся, как только он зайдёт</div>
+        <div class="online-spinner"></div>
+        <button class="menu-btn" id="btn-online-copy" onclick="onlineCopyLink()">Скопировать ссылку</button>
+        <button class="menu-btn" id="btn-online-share" style="display:none;" onclick="onlineShareLink()">Поделиться</button>
+    </div>
+
+    <div class="online-msg" id="online-msg"></div>
+    <button class="btn-small" style="margin-top:14px;" onclick="onlineBack()">← Назад</button>
+</div>
+
+<div class="menu-overlay" id="decksize-menu" style="display:none;">
+    <div class="menu-title">Колода</div>
+    <div class="menu-subtitle">Сколько карт в игре</div>
+    <div class="menu-options">
+        <button class="menu-btn" onclick="chooseDeckSize(24)">24 карты (быстрая)</button>
+        <button class="menu-btn" onclick="chooseDeckSize(36)">36 карт (классика)</button>
+        <button class="menu-btn" onclick="chooseDeckSize(52)">52 карты (полная)</button>
+    </div>
+    <button class="btn-small" style="margin-top:24px;" onclick="backToModeMenuFromDeck()">← Назад</button>
+</div>
+
+<div class="menu-overlay" id="difficulty-menu" style="display:none;">
+    <div class="menu-title">Сложность</div>
+    <div class="menu-subtitle">Выберите уровень бота</div>
+    <div class="menu-options">
+        <button class="menu-btn" onclick="chooseDifficulty('easy')">Лёгкий</button>
+        <button class="menu-btn" onclick="chooseDifficulty('normal')">Нормальный</button>
+        <button class="menu-btn" onclick="chooseDifficulty('hard')">Сложный</button>
+    </div>
+    <button class="btn-small" style="margin-top:24px;" onclick="backToDeckMenu()">← Назад</button>
+</div>
+
+<div class="header">
+    <button class="btn-small" onclick="openMenu()">← В меню</button>
+    <div class="title" id="mode-title">Durak Gold</div>
+    <div class="status" id="status-text">Ваш ход</div>
+</div>
+
+<div class="game-board">
+    <div class="hand" id="bot-hand"></div>
+
+    <div class="deck-area" id="deck-area">
+        <div id="trump-container" class="trump-card"></div>
+        <div id="deck-container" class="deck-stack"><div class="card back"></div></div>
+        <div class="deck-count" id="deck-count">0</div>
+        <div class="trump-badge" id="trump-badge" style="display:none;"></div>
+    </div>
+
+    <div class="bito-area">
+        <div class="bito-stack" id="bito-stack"></div>
+        <div class="bito-count" id="bito-count">0</div>
+    </div>
+
+    <div class="table-area" id="table-area"></div>
+    <div class="hand" id="player-hand"></div>
+    <div class="speech" id="speech-bot"></div>
+    <div class="speech" id="speech-me"></div>
+</div>
+
+<div class="controls">
+    <button class="btn" id="btn-bito" disabled onclick="onBito()">БИТО</button>
+    <button class="btn" id="btn-take" disabled onclick="onTake()">ВЗЯТЬ</button>
+    <button class="btn" id="btn-give-to-bot" style="display:none;" onclick="giveCardsToBot()">Отдать боту</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="modal-overlay" id="end-modal">
+    <div class="modal">
+        <h2 id="modal-title">Победа!</h2>
+        <p id="modal-desc">Вы избавились от всех карт.</p>
+        <div class="reward" id="modal-reward"></div>
+        <button class="btn-restart" id="btn-restart" onclick="restartGame()">Сыграть снова</button>
+        <div><button class="btn-small btn-end-leave" id="btn-end-leave" style="display:none;" onclick="openMenu()">В меню</button></div>
+    </div>
+</div>
+
+<script>
+    const SUITS = ['♠', '♣', '♥', '♦'];
+    const RANK_VALUES = { '2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'10':10,'J':11,'Q':12,'K':13,'A':14 };
+    const DECK_CONFIGS = {
+        24: ['9','10','J','Q','K','A'],
+        36: ['6','7','8','9','10','J','Q','K','A'],
+        52: ['2','3','4','5','6','7','8','9','10','J','Q','K','A']
+    };
+    let RANKS = DECK_CONFIGS[36];
+    const MAX_TABLE = 6;
+
+
+    // ===== Звуки (синтез через WebAudio — без файлов, ничего не грузится) =====
+    // place — карта ложится на стол, flick — карта летит из колоды / в руку,
+    // swoosh — бито, win / lose — конец партии. Звук включается после первого касания
+    // (так требует iOS) и выключается кнопкой в главном меню.
+    const SOUND_KEY = 'durak_sound_v1';
+    const sfx = (() => {
+        let ctx = null, master = null, noiseBuf = null, voices = 0;
+        let enabled = true;
+        try { enabled = localStorage.getItem(SOUND_KEY) !== 'off'; } catch (e) {}
+
+        function init() {
+            if (ctx) return ctx;
+            const AC = window.AudioContext || window.webkitAudioContext;
+            if (!AC) return null;
+            try { ctx = new AC(); } catch (e) { return null; }
+            master = ctx.createGain();
+            master.gain.value = 0.55;
+            const comp = ctx.createDynamicsCompressor();   // чтобы десяток карт подряд не трещал
+            master.connect(comp); comp.connect(ctx.destination);
+            const len = Math.floor(ctx.sampleRate * 0.6);
+            noiseBuf = ctx.createBuffer(1, len, ctx.sampleRate);
+            const d = noiseBuf.getChannelData(0);
+            for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+            return ctx;
+        }
+        function unlock() {
+            if (!init()) return;
+            if (ctx.state !== 'running') ctx.resume().catch(() => {});
+        }
+        ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'].forEach(ev =>
+            document.addEventListener(ev, unlock, { passive: true }));
+
+        function ready() { return enabled && ctx && ctx.state === 'running' && voices < 40; }
+        function when(delayMs) { return ctx.currentTime + Math.max(0, (delayMs || 0) / 1000) + 0.005; }
+        function vary(x, amt) { return x * (1 + (Math.random() * 2 - 1) * amt); }
+
+        function noise(t, dur, type, f0, f1, q, gain) {
+            const src = ctx.createBufferSource(); src.buffer = noiseBuf;
+            src.playbackRate.value = 0.8 + Math.random() * 0.4;
+            const f = ctx.createBiquadFilter(); f.type = type; f.Q.value = q;
+            f.frequency.setValueAtTime(f0, t); f.frequency.exponentialRampToValueAtTime(Math.max(40, f1), t + dur);
+            const g = ctx.createGain();
+            g.gain.setValueAtTime(0.0001, t);
+            g.gain.exponentialRampToValueAtTime(gain, t + 0.004);
+            g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+            src.connect(f); f.connect(g); g.connect(master);
+            src.start(t, Math.random() * 0.2, dur + 0.02);
+            voices++; src.onended = () => { voices--; };
+        }
+        function tone(t, dur, type, f0, f1, gain, attack) {
+            const o = ctx.createOscillator(); o.type = type;
+            o.frequency.setValueAtTime(f0, t);
+            if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+            const g = ctx.createGain();
+            g.gain.setValueAtTime(0.0001, t);
+            g.gain.exponentialRampToValueAtTime(gain, t + (attack || 0.004));
+            g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+            o.connect(g); g.connect(master);
+            o.start(t); o.stop(t + dur + 0.02);
+            voices++; o.onended = () => { voices--; };
+        }
+
+        return {
+            get enabled() { return enabled; },
+            set(on) {
+                enabled = !!on;
+                try { localStorage.setItem(SOUND_KEY, enabled ? 'on' : 'off'); } catch (e) {}
+                if (enabled) unlock();
+            },
+            // мягкий «шлёп» карты о сукно
+            place(delayMs) {
+                if (!ready()) return; const t = when(delayMs);
+                noise(t, 0.05, 'bandpass', vary(2400, 0.12), 900, 0.9, 0.42);
+                tone(t, 0.07, 'sine', vary(190, 0.08), 80, 0.3, 0.003);
+            },
+            // короткий «фрыр» карты, летящей из колоды в руку (или со стола в руку)
+            flick(delayMs) {
+                if (!ready()) return; const t = when(delayMs);
+                noise(t, 0.075, 'bandpass', vary(3200, 0.15), vary(6500, 0.15), 1.4, 0.2);
+                noise(t + 0.045, 0.03, 'highpass', 4200, 5200, 0.7, 0.07);
+            },
+            // мягкий клик интерфейса (меню, кнопки)
+            click() {
+                if (!ready()) return; const t = when(0);
+                tone(t, 0.07, 'sine', vary(1250, 0.03), 780, 0.17, 0.002);
+                noise(t, 0.025, 'bandpass', 2600, 1800, 1.2, 0.12);
+            },
+            // «дзынь» монеты
+            coin(delayMs) {
+                if (!ready()) return; const t = when(delayMs);
+                tone(t, 0.16, 'square', 1318.5, 1318.5, 0.05, 0.002);
+                tone(t + 0.07, 0.28, 'square', 1975.5, 1975.5, 0.05, 0.002);
+                tone(t, 0.3, 'sine', 2637, 2637, 0.08, 0.002);
+            },
+            // карты уходят в бито
+            swoosh(delayMs) {
+                if (!ready()) return; const t = when(delayMs);
+                noise(t, 0.3, 'bandpass', 420, 2600, 0.8, 0.3);
+            },
+            win() {
+                if (!ready()) return; const t = when(0);
+                [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(t + i * 0.11, 0.5, 'triangle', f, f, 0.22, 0.01));
+            },
+            lose() {
+                if (!ready()) return; const t = when(0);
+                [392, 329.63, 261.63].forEach((f, i) => tone(t + i * 0.16, 0.45, 'sawtooth', f, f * 0.97, 0.09, 0.02));
+            }
+        };
+    })();
+    function updateSoundButton() {
+        const b = document.getElementById('btn-sound');
+        if (b) b.innerText = sfx.enabled ? '🔊 Звук: вкл' : '🔇 Звук: выкл';
+    }
+    function toggleSound() { sfx.set(!sfx.enabled); updateSoundButton(); }
+    // Клик по любой кнопке/пункту меню — приятный «тик» (на нажатие, а не на отпускание)
+    document.addEventListener('pointerdown', e => {
+        const el = e.target.closest ? e.target.closest('button, .collection-item') : null;
+        if (el && !el.disabled) sfx.click();
+    }, true);
+
+    // ===== Валюта «$», награды, магазин рубашек =====
+    // Прогресс хранится на устройстве игрока (localStorage): у каждого нового игрока он
+    // начинается с нуля и со стартовым бонусом — твои тестовые деньги и открытые рубашки
+    // к нему не попадают. Потом, с аккаунтами, то же самое переедет на сервер.
+    const WALLET_KEY = 'durak_wallet_v1';
+    const START_COINS = 50;
+    const DEV_TOOLS = true;      // ← поставь false в версии для магазина: секретное меню разработчика отключится
+    const REWARDS = {
+        offline: { easy: { win: 10, draw: 3, lose: 1 }, normal: { win: 25, draw: 8, lose: 2 }, hard: { win: 50, draw: 15, lose: 4 } },
+        online: { win: 40, draw: 10, lose: 5 }
+    };
+    const DAILY_BASE = 20, DAILY_STEP = 5, DAILY_MAX = 50;
+
+    function defaultWallet() { return { coins: START_COINS, wins: 0, games: 0, streak: 0, lastDaily: '', dayStreak: 0 }; }
+    function loadWallet() {
+        try {
+            const w = JSON.parse(localStorage.getItem(WALLET_KEY) || 'null');
+            if (w && typeof w.coins === 'number') return Object.assign(defaultWallet(), w);
+        } catch (e) {}
+        return defaultWallet();
+    }
+    function saveWallet(w) { try { localStorage.setItem(WALLET_KEY, JSON.stringify(w)); } catch (e) {} }
+    function fmtCoins(n) { return Math.floor(n).toLocaleString('ru-RU').replace(/ /g, ' '); }
+
+    function updateWalletUI() {
+        const w = loadWallet();
+        ['wallet-main', 'wallet-collection'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = '$ ' + fmtCoins(w.coins) + (id === 'wallet-main' && w.wins > 0 ? '<small>побед ' + w.wins + '</small>' : '');
+        });
+    }
+
+    // Награда за партию. result: 'win' | 'lose' | 'draw'. Возвращает {gain, bonus, streak}.
+    function awardForGame(result) {
+        const w = loadWallet();
+        const table = onlineActive ? REWARDS.online : (REWARDS.offline[botDifficulty] || REWARDS.offline.normal);
+        let gain = table[result] || 0, bonus = 0;
+        w.games += 1;
+        if (result === 'win') {
+            w.wins += 1; w.streak += 1;
+            bonus = Math.min(25, (w.streak - 1) * 5);
+        } else if (result === 'lose') {
+            w.streak = 0;
+        }
+        gain += bonus;
+        w.coins += gain;
+        saveWallet(w);
+        updateWalletUI();
+        return { gain, bonus, streak: w.streak };
+    }
+
+    function dayKey(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+    function claimDailyBonus() {
+        const w = loadWallet();
+        const now = new Date(), today = dayKey(now);
+        if (w.lastDaily === today) return;
+        const y = new Date(now); y.setDate(y.getDate() - 1);
+        w.dayStreak = (w.lastDaily === dayKey(y)) ? w.dayStreak + 1 : 1;
+        const bonus = Math.min(DAILY_MAX, DAILY_BASE + (w.dayStreak - 1) * DAILY_STEP);
+        w.lastDaily = today;
+        w.coins += bonus;
+        saveWallet(w);
+        updateWalletUI();
+        setTimeout(() => {
+            flashStatus('Ежедневный бонус: +' + bonus + ' $' + (w.dayStreak > 1 ? '\nДней подряд: ' + w.dayStreak : ''), 'good');
+            sfx.coin();
+        }, 700);
+    }
+
+    // Покупка рубашки: первое касание — «Купить за N $», второе — покупка.
+    let buyingId = null;
+    function onCollectionItemClick(id) {
+        const d = CARD_BACK_DESIGNS.find(x => x.id === id);
+        if (!d) return;
+        const unlocked = getUnlockedDesignIds();
+        if (unlocked.has(id)) { buyingId = null; selectCardBack(id); return; }
+        if (buyingId !== id) { buyingId = id; renderCollectionGrid(); return; }
+        const w = loadWallet();
+        if (w.coins < d.price) {
+            flashStatus('Не хватает ' + fmtCoins(d.price - w.coins) + ' $');
+            return;
+        }
+        w.coins -= d.price;
+        saveWallet(w);
+        unlocked.add(id);
+        try { localStorage.setItem(CARDBACK_UNLOCKED_KEY, JSON.stringify(Array.from(unlocked))); } catch (e) {}
+        buyingId = null;
+        applyCardBackDesign(id);
+        updateWalletUI();
+        renderCollectionGrid();
+        sfx.coin();
+        flashStatus('Рубашка «' + d.name + '» куплена', 'good');
+    }
+
+    // ---- меню разработчика: 7 быстрых касаний по заголовку главного меню ----
+    (function setupDevTools() {
+        if (!DEV_TOOLS) return;
+        const title = document.getElementById('menu-title-main');
+        if (!title) return;
+        let taps = 0, timer = null;
+        title.addEventListener('click', () => {
+            taps++;
+            clearTimeout(timer);
+            timer = setTimeout(() => { taps = 0; }, 2500);
+            if (taps >= 7) {
+                taps = 0;
+                const box = document.getElementById('dev-tools');
+                box.style.display = box.style.display === 'none' ? 'flex' : 'none';
+                flashStatus('Меню разработчика ' + (box.style.display === 'none' ? 'скрыто' : 'включено'), 'good');
+            }
+        });
+    })();
+    function devAddCoins() { const w = loadWallet(); w.coins += 1000; saveWallet(w); updateWalletUI(); sfx.coin(); }
+    function devUnlockAll() {
+        try { localStorage.setItem(CARDBACK_UNLOCKED_KEY, JSON.stringify(CARD_BACK_DESIGNS.map(d => d.id))); } catch (e) {}
+        flashStatus('Все рубашки открыты', 'good');
+    }
+    function devResetProgress() {
+        try { [WALLET_KEY, CARDBACK_UNLOCKED_KEY, CARDBACK_SELECTED_KEY, ONLINE_SESSION_KEY].forEach(k => localStorage.removeItem(k)); } catch (e) {}
+        applyCardBackDesign(getSelectedDesignId());
+        updateWalletUI();
+        flashStatus('Прогресс сброшен: ты как новый игрок', 'good');
+    }
+
+
+    // ===== Коллекция рубашек карт =====
+    // Каждый дизайн — просто сырой SVG-текст (без ручного %-кодирования, это делает
+    // encodeSvgForCss). Чтобы добавить новый дизайн в будущем — достаточно дописать
+    // сюда ещё один объект; вся остальная система (экран выбора, сохранение
+    // выбора, price/unlocked под покупку за валюту) подхватит его автоматически.
+    const CARD_BACK_DESIGNS = [
+        {
+            id: 'sakura',
+            name: 'Золотая роскошь',
+            price: 0,
+            svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 290"><defs><radialGradient id="reddisc" cx="40%" cy="35%" r="75%"><stop offset="0" stop-color="#c8394a"/><stop offset="70%" stop-color="#a81f30"/><stop offset="100%" stop-color="#8c1725"/></radialGradient><path id="petal" d="M0,0 C -2,-3 -1.3,-7.2 0,-9.5 C 1.3,-7.2 2,-3 0,0 Z" fill="#fff8ec" stroke="#c8a250" stroke-width="0.7"/><g id="flower"><use href="#petal" transform="rotate(0)"/><use href="#petal" transform="rotate(72)"/><use href="#petal" transform="rotate(144)"/><use href="#petal" transform="rotate(216)"/><use href="#petal" transform="rotate(288)"/><circle r="1.4" fill="#a81f30"/></g></defs><rect x="0" y="0" width="200" height="290" rx="13" fill="#f8f1df"/><rect x="5" y="5" width="190" height="280" rx="12" fill="none" stroke="#c8a250" stroke-width="5"/><rect x="13" y="13" width="174" height="264" rx="9" fill="none" stroke="#c8a250" stroke-width="1"/><rect x="18" y="18" width="164" height="254" rx="7" fill="none" stroke="#c8a250" stroke-width="0.6" opacity="0.7"/><g stroke="#a81f30" stroke-width="0.7" opacity="0.45"><line x1="100" y1="150" x2="100" y2="35"/><line x1="100" y1="150" x2="140" y2="42"/><line x1="100" y1="150" x2="170" y2="65"/><line x1="100" y1="150" x2="183" y2="105"/><line x1="100" y1="150" x2="183" y2="150"/><line x1="100" y1="150" x2="183" y2="195"/><line x1="100" y1="150" x2="170" y2="235"/><line x1="100" y1="150" x2="140" y2="258"/><line x1="100" y1="150" x2="100" y2="265"/><line x1="100" y1="150" x2="60" y2="258"/><line x1="100" y1="150" x2="30" y2="235"/><line x1="100" y1="150" x2="17" y2="195"/><line x1="100" y1="150" x2="17" y2="150"/><line x1="100" y1="150" x2="17" y2="105"/><line x1="100" y1="150" x2="30" y2="65"/><line x1="100" y1="150" x2="60" y2="42"/></g><circle cx="100" cy="150" r="46" fill="none" stroke="#c8a250" stroke-width="2.5"/><circle cx="100" cy="150" r="41" fill="none" stroke="#c8a250" stroke-width="1"/><circle cx="100" cy="150" r="36" fill="url(#reddisc)" stroke="#c8a250" stroke-width="1.5"/><circle cx="100" cy="17" r="2.2" fill="#a81f30"/><circle cx="100" cy="273" r="2.2" fill="#a81f30"/><g transform="translate(34,34)"><use href="#flower"/></g><g transform="translate(166,34)"><use href="#flower"/></g><g transform="translate(34,266)"><use href="#flower"/></g><g transform="translate(166,266)"><use href="#flower"/></g><g transform="translate(64,48) scale(0.65)"><use href="#flower"/></g><g transform="translate(136,48) scale(0.65)"><use href="#flower"/></g><g transform="translate(48,90) scale(0.6)"><use href="#flower"/></g><g transform="translate(152,90) scale(0.6)"><use href="#flower"/></g><g transform="translate(48,210) scale(0.6)"><use href="#flower"/></g><g transform="translate(152,210) scale(0.6)"><use href="#flower"/></g><g transform="translate(64,252) scale(0.65)"><use href="#flower"/></g><g transform="translate(136,252) scale(0.65)"><use href="#flower"/></g></svg>`
+        },
+        {
+            id: 'noir',
+            name: 'Бандитская',
+            price: 150,
+            svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 290"><defs><radialGradient id="noirbg" cx="50%" cy="45%" r="75%"><stop offset="0" stop-color="#241010"/><stop offset="60%" stop-color="#140808"/><stop offset="100%" stop-color="#0a0505"/></radialGradient><g id="bullethole"><circle r="4" fill="none" stroke="#8c2020" stroke-width="1" opacity="0.8"/><g stroke="#8c2020" stroke-width="0.8" opacity="0.6"><line x1="0" y1="-4" x2="0" y2="-9"/><line x1="0" y1="4" x2="0" y2="9"/><line x1="-4" y1="0" x2="-9" y2="0"/><line x1="4" y1="0" x2="9" y2="0"/><line x1="-2.8" y1="-2.8" x2="-6.4" y2="-6.4"/><line x1="2.8" y1="-2.8" x2="6.4" y2="-6.4"/><line x1="-2.8" y1="2.8" x2="-6.4" y2="6.4"/><line x1="2.8" y1="2.8" x2="6.4" y2="6.4"/></g></g><g id="corner-tri"><path d="M0,0 L34,0 L0,34 Z" fill="none" stroke="#c5a059" stroke-width="2"/><path d="M6,6 L22,6 L6,22 Z" fill="none" stroke="#c5a059" stroke-width="1" opacity="0.7"/></g><g id="dagger"><path d="M0,-46 L5,-14 L-5,-14 Z" fill="#7a1620" stroke="#c5a059" stroke-width="1.2"/><rect x="-7" y="-14" width="14" height="4" rx="1" fill="#c5a059"/><rect x="-2.6" y="-10" width="5.2" height="20" rx="1.5" fill="#3a1210" stroke="#c5a059" stroke-width="1"/><circle cx="0" cy="11" r="2.6" fill="#c5a059"/></g></defs><rect x="0" y="0" width="200" height="290" rx="13" fill="url(#noirbg)"/><rect x="6" y="6" width="188" height="278" rx="10" fill="none" stroke="#8c2020" stroke-width="2"/><rect x="11" y="11" width="178" height="268" rx="8" fill="none" stroke="#c5a059" stroke-width="1.4"/><use href="#corner-tri" x="4" y="4"/><use href="#corner-tri" x="200" y="4" transform="scale(-1,1)"/><use href="#corner-tri" x="4" y="290" transform="scale(1,-1)"/><use href="#corner-tri" x="200" y="290" transform="scale(-1,-1)"/><g opacity="0.85"><use href="#bullethole" x="34" y="46"/><use href="#bullethole" x="166" y="46"/><use href="#bullethole" x="26" y="145"/><use href="#bullethole" x="174" y="145"/><use href="#bullethole" x="34" y="244"/><use href="#bullethole" x="166" y="244"/></g><g transform="translate(100,110) rotate(45)"><use href="#dagger"/></g><g transform="translate(100,110) rotate(-45)"><use href="#dagger"/></g><g transform="translate(100,190) rotate(135)"><use href="#dagger"/></g><g transform="translate(100,190) rotate(-135)"><use href="#dagger"/></g><g transform="translate(100,150)"><rect x="-26" y="-26" width="52" height="52" rx="8" fill="none" stroke="#c5a059" stroke-width="2" stroke-dasharray="5 4" opacity="0.85"/><rect x="-19" y="-19" width="38" height="38" rx="6" fill="#7a1620" stroke="#c5a059" stroke-width="2"/><circle cx="-9" cy="-9" r="2.6" fill="#f0d9a8"/><circle cx="9" cy="-9" r="2.6" fill="#f0d9a8"/><circle cx="-9" cy="9" r="2.6" fill="#f0d9a8"/><circle cx="9" cy="9" r="2.6" fill="#f0d9a8"/><circle cx="0" cy="0" r="2.6" fill="#f0d9a8"/></g></svg>`
+        },
+        {
+            id: 'casino',
+            name: 'Казино',
+            price: 300,
+            svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 290"><defs><radialGradient id="casinobg" cx="50%" cy="45%" r="75%"><stop offset="0" stop-color="#0e1710"/><stop offset="70%" stop-color="#080c08"/><stop offset="100%" stop-color="#050705"/></radialGradient><g id="chipstack"><ellipse cx="0" cy="18" rx="13" ry="5" fill="#1c3324" stroke="#c5a059" stroke-width="1"/><ellipse cx="0" cy="12" rx="13" ry="5" fill="#234029" stroke="#c5a059" stroke-width="1"/><ellipse cx="0" cy="6" rx="13" ry="5" fill="#1c3324" stroke="#c5a059" stroke-width="1"/><ellipse cx="0" cy="0" rx="13" ry="5" fill="#2a4a32" stroke="#c5a059" stroke-width="1.3"/><path d="M-6,0 L0,-2.6 L6,0 L0,2.6 Z" fill="#c5a059" opacity="0.9"/></g><g id="cigar"><rect x="-48" y="-6" width="88" height="12" rx="6" fill="#5a3a22" stroke="#3a2414" stroke-width="1"/><rect x="-6" y="-7" width="14" height="14" rx="2" fill="#c5a059"/><circle cx="41" cy="0" r="6.5" fill="#d97b3f" opacity="0.9"/><circle cx="41" cy="0" r="6.5" fill="none" stroke="#3a2414" stroke-width="1"/></g><g id="corner-deco" stroke="#c5a059" stroke-width="1.4" fill="none"><path d="M2,26 L2,10 L10,10 L10,2 L26,2"/><path d="M2,34 L2,18 L18,18 L18,2 L34,2" stroke="#3f6b48" stroke-width="1"/></g></defs><rect x="0" y="0" width="200" height="290" rx="10" fill="url(#casinobg)"/><rect x="5" y="5" width="190" height="280" fill="none" stroke="#c5a059" stroke-width="1.5"/><rect x="10" y="10" width="180" height="270" fill="none" stroke="#3f6b48" stroke-width="1.6"/><use href="#corner-deco" x="0" y="0"/><use href="#corner-deco" x="200" y="0" transform="scale(-1,1)"/><use href="#corner-deco" x="0" y="290" transform="scale(1,-1)"/><use href="#corner-deco" x="200" y="290" transform="scale(-1,-1)"/><g transform="translate(100,145)"><rect x="-34" y="-34" width="68" height="68" transform="rotate(45)" fill="none" stroke="#3f6b48" stroke-width="1.6"/><rect x="-26" y="-26" width="52" height="52" transform="rotate(45)" fill="none" stroke="#c5a059" stroke-width="1"/><circle r="20" fill="none" stroke="#c5a059" stroke-width="1" opacity="0.7"/><g fill="#c5a059"><path d="M0,-14 A7,7 0 1 1 -0.2,-14 Z"/><path d="M0,14 A7,7 0 1 1 0.2,14 Z"/><path d="M-14,0 A7,7 0 1 1 -14,0.2 Z"/><path d="M14,0 A7,7 0 1 1 14,-0.2 Z"/></g><circle r="5" fill="#2a4a32" stroke="#c5a059" stroke-width="1.2"/></g><g transform="translate(38,145) rotate(90)"><use href="#chipstack"/></g><g transform="translate(162,145) rotate(-90)"><use href="#chipstack"/></g><g transform="translate(100,86)"><use href="#cigar"/></g><g transform="translate(100,204) scale(-1,-1)"><use href="#cigar"/></g><g fill="#c5a059"><rect x="97" y="12" width="6" height="6" transform="rotate(45 100 15)"/><rect x="97" y="272" width="6" height="6" transform="rotate(45 100 275)"/></g></svg>`
+        }
+    ];
+    const CARDBACK_SELECTED_KEY = 'durak_cardback_selected_v1';
+    const CARDBACK_UNLOCKED_KEY = 'durak_cardback_unlocked_v1';
+
+    function encodeSvgForCss(svg) {
+        return svg.replace(/%/g, '%25').replace(/#/g, '%23').replace(/\s+/g, ' ').trim();
+    }
+
+    function getUnlockedDesignIds() {
+        try {
+            const saved = JSON.parse(localStorage.getItem(CARDBACK_UNLOCKED_KEY) || 'null');
+            if (Array.isArray(saved)) return new Set(saved);
+        } catch (e) { /* игнорируем битые данные в localStorage */ }
+        // По умолчанию разблокированы все дизайны с ценой 0
+        return new Set(CARD_BACK_DESIGNS.filter(d => d.price === 0).map(d => d.id));
+    }
+
+    function getSelectedDesignId() {
+        let saved = null;
+        try { saved = localStorage.getItem(CARDBACK_SELECTED_KEY); } catch (e) {}
+        if (saved && CARD_BACK_DESIGNS.some(d => d.id === saved) && getUnlockedDesignIds().has(saved)) return saved;
+        return CARD_BACK_DESIGNS[0].id;
+    }
+
+    function applyCardBackDesign(id) {
+        const design = CARD_BACK_DESIGNS.find(d => d.id === id) || CARD_BACK_DESIGNS[0];
+        const url = `url('data:image/svg+xml;utf8,${encodeSvgForCss(design.svg)}')`;
+        document.documentElement.style.setProperty('--card-back-image', url);
+        try { localStorage.setItem(CARDBACK_SELECTED_KEY, design.id); } catch (e) { /* приватный режим и т.п. — не критично */ }
+    }
+
+    function selectCardBack(id) {
+        const unlocked = getUnlockedDesignIds();
+        if (!unlocked.has(id)) return; // пока не куплен — экран коллекции сам не даст сюда попасть, но на всякий случай
+        applyCardBackDesign(id);
+        renderCollectionGrid();
+    }
+
+    function renderCollectionGrid() {
+        const grid = document.getElementById('collection-grid');
+        if (!grid) return;
+        const unlocked = getUnlockedDesignIds();
+        const selectedId = getSelectedDesignId();
+        grid.innerHTML = CARD_BACK_DESIGNS.map(d => {
+            const isUnlocked = unlocked.has(d.id);
+            const isSelected = d.id === selectedId;
+            const bg = `url('data:image/svg+xml;utf8,${encodeSvgForCss(d.svg)}')`;
+            const classes = ['collection-item', isSelected ? 'selected' : '', isUnlocked ? '' : 'locked'].filter(Boolean).join(' ');
+            const buying = !isUnlocked && buyingId === d.id;
+            const priceLabel = isUnlocked ? (isSelected ? 'Выбрано' : '') : (buying ? `Купить за ${d.price} $` : `${d.price} $`);
+            return `<div class="${classes}${buying ? ' buying' : ''}" onclick="onCollectionItemClick('${d.id}')">
+                <div class="collection-swatch" style="background-image: ${bg}"></div>
+                <div class="collection-name">${d.name}</div>
+                <div class="collection-price">${priceLabel}</div>
+            </div>`;
+        }).join('');
+    }
+
+    function openCollection() {
+        document.getElementById('main-menu').style.display = 'none';
+        document.getElementById('collection-menu').style.display = 'flex';
+        buyingId = null;
+        updateWalletUI();
+        renderCollectionGrid();
+    }
+
+    function closeCollection() {
+        document.getElementById('collection-menu').style.display = 'none';
+        document.getElementById('main-menu').style.display = 'flex';
+    }
+
+    // Применяем сохранённый выбор рубашки сразу при загрузке страницы —
+    // до первой раздачи, чтобы карты сразу рисовались с нужным дизайном.
+    applyCardBackDesign(getSelectedDesignId());
+
+    let gameMode = 'classic';
+    let selectedMode = 'classic';
+    let botDifficulty = 'normal'; // easy | normal | hard
+    let deckSize = 36; // 24 | 36 | 52
+    let deck = [];
+    let trumpCard = null;
+    let playerHand = [];
+    let botHand = [];
+    let tablePairs = [];       // [{attack: card, defend: card|null}]
+    let bitoCount = 0;
+
+    // true  = сейчас атакует игрок (бот должен отбиваться/переводить)
+    // false = сейчас атакует бот (игрок должен отбиваться/переводить)
+    let isPlayerAttacking = true;
+    let isGameOver = false;
+    let botIsStuck = false; // бот не может отбиться и ждёт, пока игрок докинет карты
+
+    // Карты, которые уже когда-либо появлялись в этой руке за текущую партию —
+    // нужно, чтобы анимировать перелёт от колоды только для реально новых карт,
+    // а не переигрывать анимацию на каждый рендер для уже лежащих в руке карт.
+    let knownPlayerCards = new Set();
+    let knownBotCards = new Set();
+
+    // --- Управление отложенными "ходами бота", чтобы не было "призрачной" игры после выхода в меню ---
+    let pendingTimers = [];
+    let isBotTurnPending = false;
+
+    function scheduleBotMove(fn, delay) {
+        isBotTurnPending = true;
+        const id = setTimeout(() => {
+            pendingTimers = pendingTimers.filter(t => t !== id);
+            isBotTurnPending = false;
+            if (!isGameOver) fn();
+        }, delay);
+        pendingTimers.push(id);
+    }
+    // Карты со стола улетают к руке того, кто берёт (targetId — 'player-hand' | 'bot-hand').
+    // Исходные карты прячем, а летят их копии; по окончании вызываем done().
+    function flyTableCards(targetId, done) {
+        const els = Array.from(document.querySelectorAll('#table-area .card'));
+        const target = document.getElementById(targetId);
+        if (els.length === 0 || !target) { done(); return; }
+        const tr = target.getBoundingClientRect();
+        // размер карт в руке — до него «ужимаем/растим» летящие карты, чтобы они вошли в руку, а не растворились
+        const sample = target.querySelector('.card');
+        const sr = sample ? sample.getBoundingClientRect() : null;
+        const n = els.length;
+        const stagger = 60, dur = 520;
+        // реальные границы карт в руке (контейнер на широком экране во всю ширину — по нему целиться нельзя)
+        let hcx = tr.left + tr.width / 2, hcy = tr.top + tr.height / 2, hspread = 60;
+        const kids = Array.from(target.children).filter(c => c.classList.contains('card'));
+        if (kids.length) {
+            const rs = kids.map(c => c.getBoundingClientRect());
+            const l = Math.min(...rs.map(r => r.left)), rr = Math.max(...rs.map(r => r.right));
+            hcx = (l + rr) / 2;
+            hcy = rs.reduce((a, r) => a + r.top + r.height / 2, 0) / rs.length;
+            hspread = Math.min(70, (rr - l) * 0.4);
+        }
+        els.forEach((el, i) => {
+            const r = el.getBoundingClientRect();
+            const clone = el.cloneNode(true);
+            clone.classList.add('fly-clone');
+            clone.style.cssText = `position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;margin:0;` +
+                `z-index:450;pointer-events:none;transform:none;opacity:1;transform-origin:center center;` +
+                `transition:transform ${dur}ms cubic-bezier(.3,.1,.2,1) ${i * stagger}ms, opacity 0.2s ease;`;
+            document.body.appendChild(clone);
+            el.style.visibility = 'hidden';
+            // точка прилёта: веер по ширине руки, чуть ниже/выше центра, чтобы не слипались в одну точку
+            const frac = n === 1 ? 0.5 : (i / (n - 1));
+            const tx = hcx + (frac - 0.5) * hspread;
+            const ty = hcy;
+            const k = sr ? Math.min(1.1, sr.width / r.width) : 0.8;
+            const rot = ((i % 3) - 1) * 5;
+            sfx.flick(i * stagger);
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                clone.style.transform = `translate(${tx - (r.left + r.width / 2)}px, ${ty - (r.top + r.height / 2)}px) scale(${k}) rotate(${rot}deg)`;
+            }));
+        });
+        const id = setTimeout(() => {
+            pendingTimers = pendingTimers.filter(t => t !== id);
+            done(); // рука перерисовалась с новыми картами…
+            document.querySelectorAll('.fly-clone').forEach(e => {
+                e.style.opacity = '0'; // …а летевшие копии плавно растворяются поверх неё
+                setTimeout(() => e.remove(), 220);
+            });
+        }, dur + (n - 1) * stagger + 30);
+        pendingTimers.push(id);
+    }
+
+    function clearPendingTimers() {
+        document.querySelectorAll('.fly-clone').forEach(e => e.remove());
+        pendingTimers.forEach(id => clearTimeout(id));
+        pendingTimers = [];
+        isBotTurnPending = false;
+    }
+
+    function startGame(mode) {
+        clearPendingTimers();
+        selectedMode = mode;
+        document.getElementById('main-menu').style.display = 'none';
+        document.getElementById('decksize-menu').style.display = 'flex';
+    }
+
+    function backToModeMenuFromDeck() {
+        document.getElementById('decksize-menu').style.display = 'none';
+        document.getElementById('main-menu').style.display = 'flex';
+    }
+
+    function chooseDeckSize(size) {
+        deckSize = size;
+        document.getElementById('decksize-menu').style.display = 'none';
+        document.getElementById('difficulty-menu').style.display = 'flex';
+    }
+
+    function backToDeckMenu() {
+        document.getElementById('difficulty-menu').style.display = 'none';
+        document.getElementById('decksize-menu').style.display = 'flex';
+    }
+
+    function difficultyLabel(level) {
+        return level === 'easy' ? 'Лёгкий' : level === 'hard' ? 'Сложный' : 'Нормальный';
+    }
+
+    function chooseDifficulty(level) {
+        botDifficulty = level;
+        gameMode = selectedMode;
+        document.getElementById('mode-title').innerText =
+            (gameMode === 'transfer' ? 'Переводной' : 'Подкидной') + ' Дурак • ' +
+            deckSize + ' карт • ' + difficultyLabel(level);
+        document.getElementById('difficulty-menu').style.display = 'none';
+        initGame();
+    }
+
+    function openMenu() {
+        if (onlineActive || online.ws) {
+            if (onlineActive && online.view && !online.view.over && online.view.oppConnected !== undefined &&
+                !confirm('Выйти из партии? Вам засчитается поражение.')) return;
+            onlineLeave();
+        }
+        // Прерываем текущую партию полностью, чтобы она не "доигрывала" в фоне
+        clearPendingTimers();
+        isGameOver = true;
+        document.getElementById('decksize-menu').style.display = 'none';
+        document.getElementById('difficulty-menu').style.display = 'none';
+        document.getElementById('collection-menu').style.display = 'none';
+        document.getElementById('main-menu').style.display = 'flex';
+    }
+
+    function initGame() {
+        clearPendingTimers();
+        RANKS = DECK_CONFIGS[deckSize];
+        deck = [];
+        bitoCount = 0;
+        tablePairs = [];
+        playerHand = [];
+        botHand = [];
+        isGameOver = false;
+        botIsStuck = false;
+        knownPlayerCards.clear();
+        knownBotCards.clear();
+        document.getElementById('end-modal').style.display = 'none';
+
+        for (const s of SUITS) for (const r of RANKS) deck.push({ rank: r, suit: s, isRed: (s === '♥' || s === '♦') });
+        deck.sort(() => Math.random() - 0.5);
+
+        trumpCard = deck.pop();
+        trumpCard.used = false;
+
+        // На 24 картах у каждого игрока по 6 из 12 карт после снятия козыря — колоде хватает
+        for (let i = 0; i < 6; i++) {
+            playerHand.push(deck.pop());
+            botHand.push(deck.pop());
+        }
+
+        isPlayerAttacking = true;
+        sortPlayerHand();
+        render();
+    }
+
+
+    function sortPlayerHand() {
+        playerHand.sort((a, b) => {
+            const aT = a.suit === trumpCard.suit, bT = b.suit === trumpCard.suit;
+            if (aT && !bT) return 1;
+            if (!aT && bT) return -1;
+            if (a.suit !== b.suit) return SUITS.indexOf(a.suit) - SUITS.indexOf(b.suit);
+            return RANK_VALUES[a.rank] - RANK_VALUES[b.rank];
+        });
+    }
+    function byWeakestFirst(a, b) {
+        const aT = a.suit === trumpCard.suit, bT = b.suit === trumpCard.suit;
+        if (aT && !bT) return 1;
+        if (!aT && bT) return -1;
+        return RANK_VALUES[a.rank] - RANK_VALUES[b.rank];
+    }
+
+    function canBeat(attack, defend) {
+        if (!attack || !defend) return false;
+        if (defend.suit === trumpCard.suit && attack.suit !== trumpCard.suit) return true;
+        if (defend.suit === attack.suit && RANK_VALUES[defend.rank] > RANK_VALUES[attack.rank]) return true;
+        return false;
+    }
+
+    // ===== Мозги бота: разное поведение в зависимости от botDifficulty =====
+
+    function randomOf(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+    // Выбор карты для отбоя. Возвращает карту или null (null на "сложном" уровне
+    // означает, что бот сознательно решил не тратить последний козырь и лучше взять карты).
+    function pickDefendCard(validCards) {
+        if (botDifficulty === 'easy') {
+            return randomOf(validCards);
+        }
+
+        const sorted = [...validCards].sort(byWeakestFirst);
+        const nonTrump = sorted.filter(c => c.suit !== trumpCard.suit);
+        if (nonTrump.length > 0) return nonTrump[0];
+
+        // остались только козыри
+        if (botDifficulty === 'hard') {
+            const trumpsLeft = botHand.filter(c => c.suit === trumpCard.suit).length;
+            const cardsStillInPlay = deck.length + playerHand.length; // грубая оценка "не эндгейм ли это"
+            if (trumpsLeft <= 1 && cardsStillInPlay > 8) {
+                return null; // бережём последний козырь, лучше взять карты
+            }
+        }
+        return sorted[0];
+    }
+
+    // Выбор карты для первого хода атакующего (начало раунда)
+    function pickLeadCard() {
+        if (botDifficulty === 'easy') {
+            return randomOf(botHand);
+        }
+
+        const nonTrump = botHand.filter(c => c.suit !== trumpCard.suit);
+        const pool = nonTrump.length > 0 ? nonTrump : botHand;
+
+        if (botDifficulty === 'hard') {
+            // предпочитаем ранг, которого у нас 2+ штук — легче подкидывать дальше
+            const counts = {};
+            pool.forEach(c => { counts[c.rank] = (counts[c.rank] || 0) + 1; });
+            const pairRank = Object.keys(counts).find(r => counts[r] >= 2);
+            if (pairRank) {
+                const candidates = pool.filter(c => c.rank === pairRank).sort(byWeakestFirst);
+                return candidates[0];
+            }
+        }
+
+        return [...pool].sort(byWeakestFirst)[0];
+    }
+
+    // Выбор карты для подкидывания (когда на столе уже есть карты нужного ранга)
+    function pickThrowInCard(validCards) {
+        if (botDifficulty === 'easy') return randomOf(validCards);
+        return [...validCards].sort(byWeakestFirst)[0];
+    }
+
+    // Стоит ли боту переводить, если технически может
+    function shouldBotTransfer() {
+        if (botDifficulty === 'hard') {
+            // переводит, только если это не портит его карточное преимущество
+            return botHand.length >= playerHand.length;
+        }
+        return true; // easy и normal переводят всегда, когда есть чем
+    }
+
+    function getRanksOnTable() {
+        const ranks = [];
+        tablePairs.forEach(p => { ranks.push(p.attack.rank); if (p.defend) ranks.push(p.defend.rank); });
+        return ranks;
+    }
+
+    // Сколько карт максимум можно докинуть/перевести на стол прямо сейчас против
+    // конкретной руки защищающегося: не больше 6, и не больше, чем у него карт
+    // (в руке + уже отбитых им в этом раунде).
+    function attackCapFor(defenderHand) {
+        const defendedAlready = tablePairs.filter(p => p.defend).length;
+        return Math.min(MAX_TABLE, defenderHand.length + defendedAlready);
+    }
+
+    // Лимит для текущего защищающегося (по флагу isPlayerAttacking) — годится для
+    // обычного докидывания, где роли ещё не меняются в момент проверки.
+    function maxAttackCards() {
+        return attackCapFor(isPlayerAttacking ? botHand : playerHand);
+    }
+
+    function renderCardHTML(card, onClickFn = null) {
+        if (!card) return '';
+        const colorClass = card.isRed ? 'red' : 'black';
+        const clickAttr = onClickFn ? `onclick="${onClickFn}"` : '';
+        const isFace = card.rank === 'J' || card.rank === 'Q' || card.rank === 'K' || card.rank === 'A';
+        const centerHTML = isFace
+            ? `<div class="face-emblem"><span class="face-rank">${card.rank}</span><span class="face-suit">${card.suit}</span></div>`
+            : `<div class="pip-suit">${card.suit}</div>`;
+        return `<div class="card ${colorClass}" ${clickAttr}>
+            <div class="corner corner-top"><span class="corner-rank">${card.rank}</span><span class="corner-suit">${card.suit}</span></div>
+            ${centerHTML}
+            <div class="corner corner-bottom"><span class="corner-rank">${card.rank}</span><span class="corner-suit">${card.suit}</span></div>
+        </div>`;
+    }
+
+    // Пары карт на столе всегда в одну строку. Если места не хватает — ужимаются
+    // внахлёст (тот же приём, что и в fitHand), но не более чем на 60%, чтобы
+    // отбитая карта оставалась видна. Это гарантирует, что стол никогда не
+    // "распухает" по высоте и не выталкивает кнопки БИТО/ВЗЯТЬ за экран.
+    function fitTable() {
+        const el = document.getElementById('table-area');
+        if (!el) return;
+        el.style.zoom = 1;
+        if (el.children.length === 0) return;
+        const cs = getComputedStyle(el);
+        const availW = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+        const availH = el.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+        const rows = Math.ceil(el.children.length / 3);
+        const cols = Math.min(3, el.children.length);
+        const pw = el.children[0].getBoundingClientRect().width, ph = el.children[0].getBoundingClientRect().height;
+        const contentW = cols * pw + (cols - 1) * 12, contentH = rows * ph + (rows - 1) * 14;
+        const kk = Math.min(1, availW / contentW, availH / contentH);
+        el.style.zoom = kk < 1 ? kk : 1;
+    }
+
+    // Раскладывает карты в руке "веером": если все карты с нормальным зазором не влезают
+    // в ширину контейнера — карты начинают наезжать друг на друга (отрицательный отступ),
+    // но всегда остаётся видимый краешек каждой карты, чтобы по ней можно было попасть пальцем.
+    function fitHand(containerId) {
+        const el = document.getElementById(containerId);
+        if (!el) return;
+        const count = el.children.length;
+        if (count === 0) return;
+
+        const cardWidth = parseFloat(getComputedStyle(el).getPropertyValue('--card-width')) || 60;
+        const containerWidth = el.clientWidth;
+
+        if (count === 1) {
+            el.style.setProperty('--hand-gap', '0px');
+            return;
+        }
+
+        // Веер всегда лежит внахлёст (видно ~45% каждой карты), а не растопыркой с зазором —
+        // и только если даже так карты не влезают по ширине, ужимаем шаг сильнее.
+        const comfortableStep = cardWidth * 0.55;
+        const minStep = cardWidth * 0.26;
+        let step = comfortableStep;
+
+        const neededComfortable = cardWidth + (count - 1) * comfortableStep;
+        if (neededComfortable > containerWidth) {
+            step = (containerWidth - cardWidth) / (count - 1);
+            if (step < minStep) step = minStep;
+        }
+
+        el.style.setProperty('--hand-gap', (step - cardWidth) + 'px');
+    }
+
+    // Раскладывает карты в руке веером: поворот от центра к краям + лёгкая дуга
+    // (для игрока — выгиб вверх к столу, для бота — зеркально, выгиб вниз к столу).
+    function applyFanLayout(containerId, isBot) {
+        const el = document.getElementById(containerId);
+        if (!el) return;
+        const cards = Array.from(el.children);
+        const n = cards.length;
+        if (n === 0) return;
+
+        const center = (n - 1) / 2;
+        const anglePerCard = Math.min(6, 28 / n);
+
+        cards.forEach((cardEl, i) => {
+            const offset = i - center;
+            const rotate = offset * anglePerCard;
+            let lift = Math.min(Math.abs(offset) * 3, 16);
+            if (isBot) lift = -lift;
+            cardEl.style.setProperty('--fan-rotate', rotate.toFixed(2) + 'deg');
+            cardEl.style.setProperty('--fan-lift', lift.toFixed(1) + 'px');
+            cardEl.style.transformOrigin = isBot ? 'top center' : 'bottom center';
+        });
+    }
+
+    // Анимирует "прилёт" реально новых карт из точки, где лежит колода, к их месту
+    // в руке (FLIP-приём): карту мгновенно ставим в стартовую позицию у колоды,
+    // затем одним кадром запускаем переход обратно к её законной позиции в веере.
+    // Карты, которые уже были в руке раньше (например, при обычном ре-рендере
+    // после хода), не трогаем — знаем это по Set-у уже виденных карт.
+    function animateDeal(containerId, cardsArray, knownSet) {
+        const el = document.getElementById(containerId);
+        const originEl = document.getElementById('deck-area');
+        if (!el || !originEl) return;
+
+        const originRect = originEl.getBoundingClientRect();
+        const originX = originRect.left + originRect.width / 2;
+        const originY = originRect.top + originRect.height / 2;
+
+        let dealIndex = 0;
+        cardsArray.forEach((card, i) => {
+            const cardEl = el.children[i];
+            if (!cardEl || knownSet.has(card)) return;
+
+            const cardRect = cardEl.getBoundingClientRect();
+            const dx = originX - (cardRect.left + cardRect.width / 2);
+            const dy = originY - (cardRect.top + cardRect.height / 2);
+
+            cardEl.style.transition = 'none';
+            cardEl.style.setProperty('--deal-x', dx.toFixed(1) + 'px');
+            cardEl.style.setProperty('--deal-y', dy.toFixed(1) + 'px');
+            cardEl.style.setProperty('--deal-scale', '0.5');
+            void cardEl.offsetHeight; // форсируем reflow, чтобы стартовая позиция зафиксировалась
+
+            const delay = dealIndex * 60;
+            dealIndex++;
+            sfx.flick(delay + (containerId === 'bot-hand' ? 28 : 0));
+            cardEl.style.transition = `transform ${420}ms cubic-bezier(.19,.79,.24,1) ${delay}ms`;
+            cardEl.style.setProperty('--deal-x', '0px');
+            cardEl.style.setProperty('--deal-y', '0px');
+            cardEl.style.setProperty('--deal-scale', '1');
+
+            setTimeout(() => { cardEl.style.transition = ''; }, delay + 480);
+        });
+
+        cardsArray.forEach(card => knownSet.add(card));
+    }
+
+    let renderedTableCards = 0;
+    function render() {
+        if (isGameOver) return;
+        const tableCards = tablePairs.reduce((n, p) => n + 1 + (p.defend ? 1 : 0), 0);
+        for (let i = 0; i < tableCards - renderedTableCards; i++) sfx.place(i * 90);
+        renderedTableCards = tableCards;
+
+        document.getElementById('player-hand').innerHTML = playerHand.map(card => renderCardHTML(card)).join('');
+        document.getElementById('bot-hand').innerHTML = botHand.map(() => `<div class="card back"></div>`).join('');
+        fitHand('player-hand');
+        fitHand('bot-hand');
+        applyFanLayout('player-hand', false);
+        applyFanLayout('bot-hand', true);
+        animateDeal('player-hand', playerHand, knownPlayerCards);
+        animateDeal('bot-hand', botHand, knownBotCards);
+
+        const deckContainer = document.getElementById('deck-container');
+        const trumpContainer = document.getElementById('trump-container');
+        const trumpBadge = document.getElementById('trump-badge');
+        const deckCount = document.getElementById('deck-count');
+
+        if (!trumpCard.used) {
+            deckContainer.style.display = deck.length > 0 ? 'block' : 'none';
+            trumpContainer.style.display = 'block';
+            trumpContainer.innerHTML = renderCardHTML(trumpCard);
+            deckCount.style.display = 'block';
+            deckCount.innerText = deck.length;
+            trumpBadge.style.display = 'none';
+        } else {
+            deckContainer.style.display = 'none';
+            trumpContainer.style.display = 'none';
+            deckCount.style.display = 'none';
+            const isRedSuit = trumpCard.suit === '♥' || trumpCard.suit === '♦';
+            trumpBadge.style.color = isRedSuit ? '#d32f2f' : '#e0e0e0';
+            trumpBadge.innerText = trumpCard.suit;
+            trumpBadge.style.display = 'block';
+        }
+
+        document.getElementById('table-area').innerHTML = tablePairs.map(pair => `
+            <div class="card-pair">
+                <div class="attack">${renderCardHTML(pair.attack)}</div>
+                ${pair.defend ? `<div class="defend">${renderCardHTML(pair.defend)}</div>` : ''}
+            </div>`).join('');
+        fitTable();
+
+        document.getElementById('bito-count').innerText = bitoCount > 0 ? bitoCount : '';
+        const bitoStack = document.getElementById('bito-stack');
+        // Разбросанная стопка вместо аккуратных двух карт — фиксированный набор
+        // смещений/поворотов, чтобы вид не "прыгал" между рендерами.
+        const bitoOffsets = [
+            { r: -12, x: -5, y: 3 },
+            { r: 8, x: 4, y: -2 },
+            { r: -4, x: 3, y: 5 },
+            { r: 14, x: -3, y: -4 }
+        ];
+        bitoStack.innerHTML = bitoCount > 0
+            ? bitoOffsets.map(o => `<div class="card back" style="transform: rotate(${o.r}deg) translate(${o.x}px, ${o.y}px);"></div>`).join('')
+            : '';
+
+        document.getElementById('btn-bito').disabled = !isPlayerAttacking || botIsStuck || tablePairs.length === 0 || tablePairs.some(p => !p.defend);
+        document.getElementById('btn-take').disabled = isPlayerAttacking || tablePairs.length === 0;
+        const giveBtn = document.getElementById('btn-give-to-bot');
+        giveBtn.style.display = botIsStuck ? 'inline-block' : 'none';
+        giveBtn.disabled = !botIsStuck;
+
+        const statusEl = document.getElementById('status-text');
+        if (botIsStuck) {
+            statusEl.innerText = "Бот не может отбиться! Докиньте ещё карт той же масти/ранга или нажмите «Отдать боту»";
+        } else if (isPlayerAttacking) {
+            statusEl.innerText = "Ваш ход (Атака)";
+        } else {
+            const canTransferNow = gameMode === 'transfer' && tablePairs.length > 0 && tablePairs.every(p => !p.defend);
+            statusEl.innerText = "Отбивайтесь" + (canTransferNow ? " или переводите!" : "!");
+        }
+
+        if (!onlineActive) checkGameOver();
+    }
+
+    function checkGameOver() {
+        // Пока на столе есть карты — раунд ещё не завершён, рано подводить итоги
+        // (иначе игра могла объявлять поражение прямо в момент, когда бот
+        // только что отбился своей последней картой, не дав раунду доиграть).
+        if (tablePairs.length > 0) return;
+        if (deck.length === 0 && trumpCard.used) {
+            if (playerHand.length === 0 && botHand.length === 0) showEndScreen("Ничья!", "Карт больше нет.");
+            else if (playerHand.length === 0) showEndScreen("Победа!", "Вы избавились от всех карт!");
+            else if (botHand.length === 0) showEndScreen("Поражение", "Бот скинул все карты.");
+        }
+    }
+
+    function showEndScreen(title, desc) {
+        isGameOver = true;
+        clearPendingTimers();
+        document.getElementById('modal-title').innerText = title;
+        document.getElementById('modal-desc').innerText = desc;
+        if (title === 'Победа!') sfx.win(); else if (title === 'Поражение') sfx.lose();
+        const result = title === 'Победа!' ? 'win' : title === 'Поражение' ? 'lose' : 'draw';
+        const r = awardForGame(result);
+        const rewardEl = document.getElementById('modal-reward');
+        let html = '+' + r.gain + ' $';
+        if (r.bonus > 0) html += '<small>серия побед: ' + r.streak + ' (+' + r.bonus + ' бонус)</small>';
+        rewardEl.innerHTML = html;
+        if (r.gain > 0) sfx.coin(450);
+        const modal = document.querySelector('#end-modal .modal');
+        modal.classList.remove('win');
+        document.getElementById('end-modal').style.display = 'flex';
+        if (title === "Победа!") {
+            modal.classList.add('win');
+            spawnConfetti();
+        }
+    }
+
+    function spawnConfetti() {
+        const suits = ['♠', '♣', '♥', '♦'];
+        for (let i = 0; i < 24; i++) {
+            const el = document.createElement('div');
+            el.className = 'confetti-piece';
+            el.innerText = suits[Math.floor(Math.random() * suits.length)];
+            el.style.left = Math.random() * 100 + 'vw';
+            el.style.color = Math.random() > 0.5 ? '#c5a059' : '#e0e0e0';
+            const duration = 2 + Math.random() * 1.5;
+            el.style.animationDuration = duration + 's';
+            el.style.animationDelay = (Math.random() * 0.4) + 's';
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), (duration + 0.5) * 1000);
+        }
+    }
+
+
+    // ================= ОНЛАЙН =================
+    // Клиент ничего не решает сам: хранит последнее состояние от сервера, рисует его
+    // теми же функциями, что и офлайн-игра (подменяя глобальные playerHand/tablePairs/…),
+    // и отправляет на сервер «хочу сходить так». Правила проверяет только сервер.
+    //
+    // ONLINE_SERVER_URL: '' — тот же адрес, с которого открыта игра (когда игру раздаёт
+    // сам сервер). В мобильном приложении (Capacitor) сюда нужно прописать
+    // адрес сервера, например 'wss://durak.example.com'.
+    const ONLINE_SERVER_URL = '';
+    const ONLINE_SESSION_KEY = 'durak_online_session_v1';
+
+    let onlineActive = false;   // true — на экране онлайн-партия
+    const online = {
+        ws: null, room: null, token: null, seat: null, view: null,
+        gameId: null, retry: 0, retryTimer: null, pingTimer: null, closedByUs: false,
+        queue: [], processing: false, pending: null,
+        mode: 'classic', deckSize: 36, joining: false, endShownFor: null, lastTableLen: 0
+    };
+    const onlineCardCache = new Map();
+    let onlineOppPool = [];
+
+    function onlineServerUrl() {
+        if (ONLINE_SERVER_URL) return ONLINE_SERVER_URL;
+        if (location.protocol === 'http:' || location.protocol === 'https:') {
+            return (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host;
+        }
+        return null;
+    }
+    function $(id) { return document.getElementById(id); }
+    function onlineMsg(text) { $('online-msg').innerText = text || ''; }
+
+    function saveSession() {
+        try { localStorage.setItem(ONLINE_SESSION_KEY, JSON.stringify({ room: online.room, token: online.token })); } catch (e) {}
+    }
+    function loadSession() {
+        try { return JSON.parse(localStorage.getItem(ONLINE_SESSION_KEY) || 'null'); } catch (e) { return null; }
+    }
+    function clearSession() { try { localStorage.removeItem(ONLINE_SESSION_KEY); } catch (e) {} }
+
+    function openOnlineMenu() {
+        $('main-menu').style.display = 'none';
+        $('online-menu').style.display = 'flex';
+        showOnlineSetup();
+        onlineMsg(onlineServerUrl() ? '' : 'Онлайн работает, когда игра открыта по ссылке сервера');
+    }
+    function showOnlineSetup() {
+        $('online-setup').style.display = 'flex';
+        $('online-wait').style.display = 'none';
+        $('online-subtitle').innerText = 'Игра с другом по ссылке';
+    }
+    function showOnlineWait(code) {
+        $('online-setup').style.display = 'none';
+        $('online-wait').style.display = 'flex';
+        $('online-subtitle').innerText = 'Ждём соперника';
+        $('online-code-show').innerText = code;
+        const hasLink = onlineInviteLink() !== null;
+        $('btn-online-copy').innerText = hasLink ? 'Скопировать ссылку' : 'Скопировать код';
+        $('btn-online-share').style.display = (navigator.share) ? 'block' : 'none';
+        $('online-wait-hint').innerText = hasLink
+            ? 'Отправьте ссылку другу — игра начнётся, как только он зайдёт'
+            : 'Передайте код другу — игра начнётся, как только он войдёт';
+    }
+    function onlineBack() {
+        onlineLeave();
+        $('online-menu').style.display = 'none';
+        $('main-menu').style.display = 'flex';
+    }
+    function setSeg(id, value) {
+        document.querySelectorAll('#' + id + ' .seg-btn').forEach(b => b.classList.toggle('active', b.dataset.v === String(value)));
+    }
+    function onlineSetMode(m) { online.mode = m; setSeg('seg-mode', m); }
+    function onlineSetDeck(n) { online.deckSize = n; setSeg('seg-deck', n); }
+
+    function onlineInviteLink() {
+        if (!online.room || !(location.protocol === 'http:' || location.protocol === 'https:')) return null;
+        return location.origin + location.pathname + '?room=' + online.room;
+    }
+    function copyText(text) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            return navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+        }
+        fallbackCopy(text);
+        return Promise.resolve();
+    }
+    function fallbackCopy(text) {
+        const ta = document.createElement('textarea');
+        ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); } catch (e) {}
+        ta.remove();
+    }
+    function onlineCopyLink() {
+        const text = onlineInviteLink() || online.room;
+        copyText(text).then(() => onlineMsg(onlineInviteLink() ? 'Ссылка скопирована' : 'Код скопирован'));
+    }
+    function onlineShareLink() {
+        const url = onlineInviteLink();
+        if (navigator.share) navigator.share({ title: 'Дурак онлайн', text: 'Сыграем в дурака? Код комнаты: ' + online.room, url: url || undefined }).catch(() => {});
+    }
+
+    // ---------- соединение ----------
+    function onlineConnect(firstMsg) {
+        const url = onlineServerUrl();
+        if (!url) { onlineMsg('Онлайн работает, когда игра открыта по ссылке сервера'); return false; }
+        if (online.ws && online.ws.readyState <= 1) {
+            if (online.ws.readyState === 1) { online.ws.send(JSON.stringify(firstMsg)); return true; }
+            online.pending = firstMsg; return true;
+        }
+        online.pending = firstMsg;
+        online.closedByUs = false;
+        let ws;
+        try { ws = new WebSocket(url); } catch (e) { onlineMsg('Не удалось подключиться'); return false; }
+        online.ws = ws;
+        ws.onopen = () => {
+            if (online.pending) { ws.send(JSON.stringify(online.pending)); online.pending = null; }
+            clearInterval(online.pingTimer);
+            online.pingTimer = setInterval(() => { if (ws.readyState === 1) ws.send('{"t":"ping"}'); }, 20000);
+        };
+        ws.onmessage = ev => { let m; try { m = JSON.parse(ev.data); } catch (e) { return; } onlineMessage(m); };
+        ws.onclose = ev => {
+            clearInterval(online.pingTimer);
+            if (online.ws === ws) online.ws = null;
+            if (ev && ev.code === 4000) { online.closedByUs = true; setStatusText('Игра открыта в другом окне'); return; }
+            if (online.closedByUs) return;
+            onlineScheduleReconnect();
+        };
+        ws.onerror = () => {};
+        return true;
+    }
+    function onlineScheduleReconnect() {
+        if (!online.room || !online.token) {
+            // ещё не успели войти в комнату — просто сообщаем
+            if ($('online-menu').style.display !== 'none') onlineMsg('Нет связи с сервером. Попробуйте ещё раз');
+            return;
+        }
+        clearTimeout(online.retryTimer);
+        const delay = Math.min(500 * Math.pow(2, online.retry++), 5000);
+        if (onlineActive) setStatusText('Нет связи… переподключаемся');
+        online.retryTimer = setTimeout(() => {
+            onlineConnect({ t: 'join', room: online.room, token: online.token });
+        }, delay);
+    }
+    function onlineSend(obj) {
+        if (online.ws && online.ws.readyState === 1) online.ws.send(JSON.stringify(obj));
+        else setStatusText('Нет связи…');
+    }
+
+    function onlineCreate() {
+        onlineMsg('Создаём комнату…');
+        onlineConnect({ t: 'create', mode: online.mode, deckSize: online.deckSize });
+    }
+    function onlineJoinByCode() {
+        const code = $('online-code').value.trim().toUpperCase();
+        if (code.length < 4) { onlineMsg('Введите код комнаты'); return; }
+        onlineJoinRoom(code);
+    }
+    function onlineJoinRoom(code) {
+        onlineMsg('Входим…');
+        const s = loadSession();
+        const token = s && s.room === code ? s.token : undefined;
+        onlineConnect({ t: 'join', room: code, token });
+    }
+
+    function onlineLeave() {
+        clearTimeout(online.retryTimer);
+        online.closedByUs = true;
+        if (online.ws) {
+            try { if (online.ws.readyState === 1) online.ws.send('{"t":"leave"}'); online.ws.close(); } catch (e) {}
+        }
+        online.ws = null; online.room = null; online.token = null; online.view = null;
+        online.gameId = null; online.lastSeq = undefined; online.queue = []; online.processing = false; online.retry = 0; online.endShownFor = null;
+        clearSession();
+        try { if (location.search.includes('room=')) history.replaceState(null, '', location.pathname); } catch (e) {}
+        const wasActive = onlineActive;
+        onlineActive = false;
+        $('online-menu').style.display = 'none';
+        $('end-modal').style.display = 'none';
+        $('btn-end-leave').style.display = 'none';
+        const b = $('btn-restart'); b.disabled = false; b.innerText = 'Сыграть снова'; b.style.display = '';
+        $('btn-give-to-bot').innerText = 'Отдать боту';
+        if (wasActive) isGameOver = true;
+    }
+
+    function onlineMessage(m) {
+        switch (m.t) {
+            case 'joined':
+                online.room = m.room; online.token = m.token; online.seat = m.seat;
+                online.mode = m.mode; online.deckSize = m.deckSize; online.retry = 0;
+                saveSession();
+                if (!onlineActive) {
+                    $('online-menu').style.display = 'flex';
+                    $('main-menu').style.display = 'none';
+                    showOnlineWait(m.room);
+                    onlineMsg('');
+                }
+                try { history.replaceState(null, '', location.pathname + '?room=' + m.room); } catch (e) {}
+                break;
+            case 'waiting':
+                showOnlineWait(m.room);
+                break;
+            case 'state':
+                online.queue.push(m);
+                onlineProcessQueue();
+                break;
+            case 'error':
+                if (m.code === 'no_room' || m.code === 'full') {
+                    clearTimeout(online.retryTimer);
+                    online.room = null; online.token = null; clearSession();
+                    if (onlineActive) { onlineLeave(); openMenu(); }
+                    $('online-menu').style.display = 'flex'; $('main-menu').style.display = 'none';
+                    showOnlineSetup();
+                    onlineMsg(m.msg);
+                    try { history.replaceState(null, '', location.pathname); } catch (e) {}
+                } else if (m.code === 'illegal') {
+                    flashStatus(m.msg);
+                } else {
+                    if (onlineActive) flashStatus(m.msg); else onlineMsg(m.msg);
+                }
+                break;
+        }
+    }
+
+    // ---------- применение состояния ----------
+    function onlineCard(c) {
+        if (!c) return null;
+        const k = c.rank + c.suit;
+        let o = onlineCardCache.get(k);
+        if (!o) { o = { rank: c.rank, suit: c.suit, isRed: c.suit === '♥' || c.suit === '♦' }; onlineCardCache.set(k, o); }
+        return o;
+    }
+
+    function onlineProcessQueue() {
+        if (online.processing) return;
+        online.processing = true;
+        const wait = ms => new Promise(r => setTimeout(r, ms));
+        const sameTable = (a, b) => a.length === b.length &&
+            a.every((p, i) => p.attack.rank === b[i].attack.rank && p.attack.suit === b[i].attack.suit &&
+                !!p.defend === !!b[i].defend);
+
+        const step = async () => {
+            const v = online.queue.shift();
+            if (!v) { online.processing = false; return; }
+            const prev = online.view;
+            const type = v.lastEvent.type;
+            const roundEnded = prev && prev.gameId === v.gameId && v.lastEvent.seq !== prev.lastEvent.seq &&
+                (type === 'take' || type === 'bito') && v.lastTable && v.lastTable.length > 0;
+
+            if (roundEnded) {
+                // 1) если последняя карта раунда ещё не была на экране — показываем стол как он закончился
+                if (!sameTable(prev.table, v.lastTable)) {
+                    onlineApply(Object.assign({}, prev, { table: v.lastTable, lastEvent: prev.lastEvent }));
+                    await wait(1000);
+                } else {
+                    await wait(450);
+                }
+                // 2) карты улетают к тому, кто берёт, либо в бито
+                if (type === 'take') {
+                    const mine = v.lastEvent.by === v.you;
+                    if (mine) v.lastTable.forEach(p => { knownPlayerCards.add(onlineCard(p.attack)); if (p.defend) knownPlayerCards.add(onlineCard(p.defend)); });
+                    else {
+                        const n = v.lastTable.reduce((k, p) => k + 1 + (p.defend ? 1 : 0), 0);
+                        for (let i = 0; i < n; i++) { const ph = { hidden: true }; onlineOppPool.push(ph); knownBotCards.add(ph); }
+                    }
+                    await new Promise(res => flyTableCards(mine ? 'player-hand' : 'bot-hand', res));
+                } else {
+                    const t = $('table-area');
+                    t.classList.add('animate-bito');
+                    sfx.swoosh();
+                    await wait(350);
+                    t.classList.remove('animate-bito');
+                }
+            }
+            onlineApply(v);
+            step();
+        };
+        step();
+    }
+
+    function onlineApply(v) {
+        const newGame = online.gameId !== v.gameId;
+        const prevSeq = online.lastSeq;
+        online.view = v;
+        if (newGame) {
+            online.gameId = v.gameId;
+            onlineCardCache.clear();
+            onlineOppPool = [];
+            knownPlayerCards.clear(); knownBotCards.clear();
+            online.endShownFor = null;
+            $('end-modal').style.display = 'none';
+            const b = $('btn-restart'); b.disabled = false; b.innerText = 'Реванш';
+        }
+        if (!onlineActive) {
+            onlineActive = true;
+            clearPendingTimers();
+            ['main-menu', 'online-menu', 'decksize-menu', 'difficulty-menu', 'collection-menu'].forEach(id => $(id).style.display = 'none');
+            $('btn-give-to-bot').innerText = 'Хватит';
+        }
+
+        gameMode = v.mode; deckSize = v.deckSize;
+        $('mode-title').innerText = (v.mode === 'transfer' ? 'Переводной' : 'Подкидной') + ' • ' + v.deckSize;
+
+        trumpCard = Object.assign({}, onlineCard(v.trump), { used: v.trumpTaken });
+        playerHand = v.hand.map(onlineCard);
+        sortPlayerHand();
+        while (onlineOppPool.length < v.oppCount) onlineOppPool.push({ hidden: true });
+        while (onlineOppPool.length > v.oppCount) onlineOppPool.pop();
+        botHand = onlineOppPool.slice();
+        deck = new Array(v.deckCount).fill(null);
+        tablePairs = v.table.map(p => ({ attack: onlineCard(p.attack), defend: onlineCard(p.defend) }));
+        bitoCount = v.bito;
+        isPlayerAttacking = v.youAttack;
+        botIsStuck = false;
+        isGameOver = false;
+        render();
+        onlineAfterRender(v);
+
+        // реплики по событиям (первое состояние после входа/реконнекта не озвучиваем)
+        if (!newGame && prevSeq !== undefined && v.lastEvent.seq !== prevSeq) {
+            const word = { takeStart: 'Беру', take: 'Беру', bito: 'Бито', transfer: 'Перевожу' }[v.lastEvent.type];
+            if (word) say(v.lastEvent.by === v.you ? 'me' : 'bot', word);
+        }
+        online.lastSeq = v.lastEvent.seq;
+
+        if (v.over) onlineShowEnd(v);
+    }
+
+    function onlineStatusFor(v) {
+        if (!v.oppConnected) return 'Соперник отключился…';
+        if (v.phase === 'throwin') {
+            return v.youAttack ? 'Докиньте или «Хватит»' : 'Вы берёте…';
+        }
+        if (v.youAttack) {
+            if (v.phase === 'defend') return 'Он отбивается…';
+            return v.table.length === 0 ? 'Ваш ход (Атака)' : 'Бито или подкиньте';
+        }
+        if (v.phase === 'defend') {
+            const canTransfer = v.mode === 'transfer' && v.table.length > 0 && v.table.every(p => !p.defend)
+                && v.table.length < Math.min(6, v.oppCount);
+            return canTransfer ? 'Отбейте / переведите' : 'Отбивайтесь!';
+        }
+        return v.table.length === 0 ? 'Ход соперника…' : 'Соперник решает…';
+    }
+    function setStatusText(t) { $('status-text').innerText = t; }
+    let flashTimer = null;
+    function flashStatus(t, kind) {
+        const el = document.getElementById('toast');
+        el.innerText = t;
+        el.classList.toggle('good', kind === 'good');
+        el.classList.add('show');
+        clearTimeout(flashTimer);
+        flashTimer = setTimeout(() => el.classList.remove('show'), 2200);
+    }
+
+    function onlineAfterRender(v) {
+        $('btn-bito').disabled = !(v.youAttack && v.phase === 'attack' && v.table.length > 0 && !v.over);
+        $('btn-take').disabled = !(!v.youAttack && v.phase === 'defend' && !v.over);
+        const give = $('btn-give-to-bot');
+        give.style.display = (v.youAttack && v.phase === 'throwin' && !v.over) ? 'inline-block' : 'none';
+        give.disabled = false;
+        setStatusText(onlineStatusFor(v));
+    }
+
+    function onlineShowEnd(v) {
+        const modal = document.querySelector('#end-modal .modal');
+        const forfeit = v.reason === 'forfeit';
+        const rematchOpp = v.rematch && v.rematch[1];
+        const title = v.result === 'win' ? 'Победа!' : v.result === 'lose' ? 'Поражение' : 'Ничья!';
+        let desc;
+        if (v.result === 'win') desc = forfeit ? 'Соперник вышел из игры' : 'Вы избавились от всех карт!';
+        else if (v.result === 'lose') desc = 'Вы остались с картами — вы дурак';
+        else desc = 'Карт больше нет.';
+        if (!forfeit && rematchOpp) desc += '\nСоперник хочет реванш!';
+
+        const btn = $('btn-restart');
+        if (online.endShownFor !== v.gameId) {
+            online.endShownFor = v.gameId;
+            showEndScreen(title, desc);
+            btn.disabled = false; btn.innerText = 'Реванш';
+        } else {
+            $('modal-desc').innerText = desc;
+        }
+        $('modal-desc').style.whiteSpace = 'pre-line';
+        btn.style.display = forfeit ? 'none' : '';
+        if (v.rematch && v.rematch[0]) { btn.disabled = true; btn.innerText = 'Ждём соперника…'; }
+        $('btn-end-leave').style.display = 'inline-block';
+        isGameOver = true;
+    }
+
+    function onlineCardClick(index, targetPair = null) {
+        const v = online.view;
+        if (!v || v.over) return null;
+        const card = playerHand[index];
+        if (!card) return null;
+        const c = { rank: card.rank, suit: card.suit };
+
+        if (v.youAttack) {
+            if (v.phase === 'defend') return 'Соперник ещё отбивается';
+            if (v.table.length > 0) {
+                const ranks = new Set();
+                v.table.forEach(p => { ranks.add(p.attack.rank); if (p.defend) ranks.add(p.defend.rank); });
+                if (!ranks.has(c.rank)) return 'Так делать нельзя: подкидывать можно только такое же достоинство, как на столе';
+                const cap = Math.min(6, v.oppCount + v.table.filter(p => p.defend).length);
+                if (v.table.length >= cap) return 'Так делать нельзя: больше подкидывать нельзя';
+            }
+            onlineSend({ t: 'move', a: 'attack', card: c });
+            return null;
+        }
+        if (v.phase !== 'defend') return 'Сейчас ход соперника';
+
+        const canTransfer = v.mode === 'transfer' && v.table.length > 0 && v.table.every(p => !p.defend)
+            && v.table[0].attack.rank === c.rank && v.table.length < Math.min(6, v.oppCount);
+        const beats = p => p && !p.defend && canBeat(onlineCard(p.attack), card);
+
+        let pairIdx = -1;
+        if (targetPair !== null) {
+            const t = v.table[targetPair];
+            if (beats(t)) pairIdx = targetPair;
+            else if (!canTransfer) return t && t.defend ? 'Эта карта уже отбита' : 'Так делать нельзя: эта карта не бьёт';
+        } else if (!canTransfer) {
+            pairIdx = v.table.findIndex(beats);
+            if (pairIdx < 0) return 'Так делать нельзя: эта карта ничего не бьёт';
+        }
+        if (pairIdx < 0) onlineSend({ t: 'move', a: 'transfer', card: c });
+        else onlineSend({ t: 'move', a: 'defend', card: c, pair: pairIdx });
+        return null;
+    }
+
+    // Мобильные браузеры усыпляют сокеты в фоне — при возврате проверяем связь сразу.
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && online.room && online.token && !online.closedByUs &&
+            (!online.ws || online.ws.readyState > 1)) {
+            clearTimeout(online.retryTimer);
+            onlineConnect({ t: 'join', room: online.room, token: online.token });
+        }
+    });
+
+    // Кнопка «Играть онлайн» появляется, только если рядом есть сервер игры.
+    (function onlineDetect() {
+        const show = () => { $('btn-online-menu').style.display = ''; };
+        if (ONLINE_SERVER_URL) { show(); return; }
+        if (!(location.protocol === 'http:' || location.protocol === 'https:')) return;
+        try {
+            fetch('/healthz', { cache: 'no-store' }).then(r => r.json()).then(j => { if (j && j.ok) show(); }).catch(() => {});
+        } catch (e) {}
+    })();
+
+    // Вход по ссылке вида ?room=ABCDE
+    (function onlineAutoJoin() {
+        let code = null;
+        try { code = new URLSearchParams(location.search).get('room'); } catch (e) {}
+        if (!code || !onlineServerUrl()) return;
+        code = code.toUpperCase().slice(0, 8);
+        $('main-menu').style.display = 'none';
+        $('online-menu').style.display = 'flex';
+        showOnlineSetup();
+        $('online-code').value = code;
+        onlineJoinRoom(code);
+    })();
+
+
+    // ================= ПЕРЕТАСКИВАНИЕ КАРТ ПАЛЬЦЕМ =================
+    // Тап по карте — как раньше (карта сама выбирает, что бить). Потянул карту — кладёшь её
+    // на конкретную карту на столе (чтобы отбить именно ту, что хочешь) или просто на стол
+    // (атака / подкидывание / перевод). Не подошло — карта возвращается в руку, а
+    // сверху всплывает подсказка, почему так нельзя.
+    (function setupDrag() {
+        const handEl = document.getElementById('player-hand');
+        const DRAG_THRESHOLD = 8;
+        let st = null;
+
+        function pairAt(x, y) {
+            const el = document.elementFromPoint(x, y);
+            const pairEl = el && el.closest ? el.closest('.card-pair') : null;
+            if (!pairEl) return -1;
+            return Array.prototype.indexOf.call(document.getElementById('table-area').children, pairEl);
+        }
+        function clearHighlights() {
+            document.querySelectorAll('.card-pair.drop-ok, .card-pair.drop-hover').forEach(e => e.classList.remove('drop-ok', 'drop-hover'));
+        }
+        function markTargets(card) {
+            clearHighlights();
+            if (isPlayerAttacking) return;
+            Array.from(document.getElementById('table-area').children).forEach((el, i) => {
+                const p = tablePairs[i];
+                if (p && !p.defend && canBeat(p.attack, card)) el.classList.add('drop-ok');
+            });
+        }
+        function moveClone(x, y) {
+            st.clone.style.left = (x - st.offX) + 'px';
+            st.clone.style.top = (y - st.offY) + 'px';
+        }
+        function finish(e, cancelled) {
+            window.removeEventListener('pointermove', onMove, true);
+            window.removeEventListener('pointerup', onUp, true);
+            window.removeEventListener('pointercancel', onCancel, true);
+            const s0 = st; st = null;
+            if (!s0) return;
+            try { document.body.releasePointerCapture(s0.pointerId); } catch (err) {}
+            clearHighlights();
+
+            const idx = playerHand.indexOf(s0.card);
+            if (!s0.dragging) {
+                // обычное нажатие
+                if (!cancelled && idx >= 0) { const msg = onPlayerCardClick(idx); if (msg) flashStatus(msg); }
+                return;
+            }
+            const rect = handEl.getBoundingClientRect();
+            const x = e.clientX, y = e.clientY;
+            const insideHand = y >= rect.top - 4;     // отпустили над рукой — отмена
+            let msg = null, played = false;
+            if (!cancelled && idx >= 0 && !insideHand) {
+                const target = pairAt(x, y);
+                msg = onPlayerCardClick(idx, target >= 0 ? target : null);
+                played = !msg;
+            }
+            if (msg) flashStatus(msg);
+            if (played) {
+                s0.clone.remove();
+            } else {
+                // возвращаем карту в руку
+                const cardEl = handEl.children[idx];
+                const r = (cardEl || s0.origin).getBoundingClientRect();
+                s0.clone.classList.add('returning');
+                s0.clone.style.left = r.left + 'px';
+                s0.clone.style.top = r.top + 'px';
+                s0.clone.style.transform = 'none';
+                setTimeout(() => { s0.clone.remove(); if (cardEl) cardEl.classList.remove('dragging'); }, 230);
+            }
+            if (s0.origin) s0.origin.classList.remove('dragging');
+        }
+        function onMove(e) {
+            if (!st || e.pointerId !== st.pointerId) return;
+            const dx = e.clientX - st.startX, dy = e.clientY - st.startY;
+            if (!st.dragging) {
+                if (Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+                st.dragging = true;
+                try { document.body.setPointerCapture(e.pointerId); } catch (err) {}
+                const r = st.origin.getBoundingClientRect();
+                const clone = st.origin.cloneNode(true);
+                clone.removeAttribute('onclick');
+                clone.className = 'card drag-clone ' + (st.card.isRed ? 'red' : 'black');
+                clone.style.cssText = `left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;transform:scale(1.08);`;
+                // у клона свой размер карты, чтобы уголки и значки не сжимались
+                clone.style.setProperty('--card-width', getComputedStyle(handEl).getPropertyValue('--card-width'));
+                clone.style.setProperty('--card-height', getComputedStyle(handEl).getPropertyValue('--card-height'));
+                document.body.appendChild(clone);
+                st.clone = clone;
+                st.offX = st.startX - r.left;
+                st.offY = Math.min(st.startY - r.top, r.height * 0.5) + 36; // карта над пальцем, чтобы её было видно
+                st.origin.classList.add('dragging');
+                markTargets(st.card);
+            }
+            moveClone(e.clientX, e.clientY);
+            const t = pairAt(e.clientX, e.clientY);
+            document.querySelectorAll('.card-pair.drop-hover').forEach(el => el.classList.remove('drop-hover'));
+            if (t >= 0) document.getElementById('table-area').children[t].classList.add('drop-hover');
+            e.preventDefault();
+        }
+        function onUp(e) { if (st && e.pointerId === st.pointerId) finish(e, false); }
+        function onCancel(e) { if (st && e.pointerId === st.pointerId) finish(e, true); }
+
+        handEl.addEventListener('pointerdown', e => {
+            if (st) return;
+            if (e.pointerType === 'mouse' && e.button !== 0) return;
+            const cardEl = e.target.closest ? e.target.closest('.card') : null;
+            if (!cardEl || cardEl.parentNode !== handEl) return;
+            const idx = Array.prototype.indexOf.call(handEl.children, cardEl);
+            const card = playerHand[idx];
+            if (!card) return;
+            st = { pointerId: e.pointerId, startX: e.clientX, startY: e.clientY, card, origin: cardEl, dragging: false, clone: null, offX: 0, offY: 0 };
+            window.addEventListener('pointermove', onMove, true);
+            window.addEventListener('pointerup', onUp, true);
+            window.addEventListener('pointercancel', onCancel, true);
+        });
+    })();
+
+    function restartGame() {
+        if (onlineActive) {
+            onlineSend({ t: 'rematch' });
+            const b = document.getElementById('btn-restart');
+            b.disabled = true; b.innerText = 'Ждём соперника…';
+            return;
+        }
+        initGame();
+    }
+
+    function triggerBitoAnimation(callback) {
+        const tableArea = document.getElementById('table-area');
+        tableArea.classList.add('animate-bito');
+        setTimeout(() => {
+            discardTableToBito();
+            tableArea.classList.remove('animate-bito');
+            callback();
+        }, 350);
+    }
+
+    function discardTableToBito() {
+        sfx.swoosh();
+        let count = 0;
+        tablePairs.forEach(p => { count++; if (p.defend) count++; });
+        bitoCount += count;
+        tablePairs = [];
+        refillHands();
+    }
+
+    // Ход игрока картой из руки. targetPair — номер карты на столе, на которую кладут
+    // (при перетаскивании пальцем); null — простое нажатие (карта сама выберет, куда).
+    // Возвращает текст ошибки (его покажет всплывающая подсказка) или null, если всё ок.
+    function onPlayerCardClick(index, targetPair = null) {
+        if (onlineActive) return onlineCardClick(index, targetPair);
+        if (isGameOver) return null;
+        if (isBotTurnPending) return 'Подождите, соперник ходит';
+        const card = playerHand[index];
+        if (!card) return null;
+
+        if (isPlayerAttacking) {
+            if (tablePairs.length > 0) {
+                if (!getRanksOnTable().includes(card.rank)) return 'Так делать нельзя: подкидывать можно только такое же достоинство, как на столе';
+                if (tablePairs.length >= maxAttackCards()) return 'Так делать нельзя: больше подкидывать нельзя';
+            }
+            playerHand.splice(index, 1);
+            tablePairs.push({ attack: card, defend: null });
+            render();
+            scheduleBotMove(botRespond, 500);
+            return null;
+        }
+
+        // Игрок защищается — или переводит.
+        // Лимит на перевод считаем от руки БОТА, а не своей — после перевода
+        // отбиваться придётся именно ему.
+        const canTransfer = gameMode === 'transfer'
+            && tablePairs.length > 0
+            && tablePairs.every(p => !p.defend)
+            && tablePairs[0].attack.rank === card.rank
+            && tablePairs.length < attackCapFor(botHand);
+        const beats = p => p && !p.defend && canBeat(p.attack, card);
+
+        let pair = null;
+        if (targetPair !== null) {
+            const t = tablePairs[targetPair];
+            if (beats(t)) pair = t;
+            else if (!canTransfer) {
+                return t && t.defend ? 'Эта карта уже отбита' : 'Так делать нельзя: эта карта не бьёт';
+            }
+        } else if (!canTransfer) {
+            pair = tablePairs.find(beats) || null;
+            if (!pair) return 'Так делать нельзя: эта карта ничего не бьёт';
+        }
+
+        if (!pair) {
+            // перевод
+            playerHand.splice(index, 1);
+            tablePairs.push({ attack: card, defend: null });
+            isPlayerAttacking = true; // роли поменялись: теперь бот должен отбиваться
+            say('me', 'Перевожу');
+            sortPlayerHand();
+            render();
+            scheduleBotMove(botRespond, 600);
+            return null;
+        }
+
+        playerHand.splice(index, 1);
+        pair.defend = card;
+        sortPlayerHand();
+        render();
+        if (!tablePairs.some(p => !p.defend)) {
+            // Игрок отбился от всех карт бота — бот (атакующий) решает, подкинуть ещё или бито
+            scheduleBotMove(botAttackMore, 700);
+        }
+        return null;
+    }
+
+    function botRespond() {
+        if (isGameOver || !isPlayerAttacking) return;
+
+        // Бот вместо отбоя может перевести — лимит считаем от руки ИГРОКА,
+        // ему отбиваться после перевода, а не боту.
+        const canBotTransfer = gameMode === 'transfer'
+            && tablePairs.length > 0
+            && tablePairs.every(p => !p.defend)
+            && tablePairs.length < attackCapFor(playerHand);
+
+        if (canBotTransfer) {
+            const attackRank = tablePairs[0].attack.rank;
+            const transferCard = botHand.find(c => c.rank === attackRank);
+            if (transferCard && shouldBotTransfer()) {
+                const idx = botHand.indexOf(transferCard);
+                botHand.splice(idx, 1);
+                tablePairs.push({ attack: transferCard, defend: null });
+                isPlayerAttacking = false; // теперь игрок должен отбиваться
+                say('bot', 'Перевожу');
+                render();
+                return;
+            }
+        }
+
+        const undefendedPair = tablePairs.find(p => !p.defend);
+        if (!undefendedPair) return;
+
+        const validCards = botHand.filter(c => canBeat(undefendedPair.attack, c));
+        const cardToPlay = validCards.length > 0 ? pickDefendCard(validCards) : null;
+        if (cardToPlay) {
+            const idx = botHand.indexOf(cardToPlay);
+            botHand.splice(idx, 1);
+            undefendedPair.defend = cardToPlay;
+            render();
+            if (tablePairs.some(p => !p.defend)) {
+                scheduleBotMove(botRespond, 500);
+            }
+            // если бот отбился от всех — ход за игроком (атакующим): подкинуть ещё или БИТО
+        } else {
+            botIsStuck = true;
+            say('bot', 'Беру');
+            render();
+        }
+    }
+
+    function giveCardsToBot() {
+        if (onlineActive) { onlineSend({ t: 'move', a: 'done' }); return; }
+        if (isGameOver || !botIsStuck || isBotTurnPending) return;
+        isBotTurnPending = true;
+        document.getElementById('btn-give-to-bot').disabled = true;
+        flyTableCards('bot-hand', () => {
+            isBotTurnPending = false;
+            if (isGameOver) return;
+            botIsStuck = false;
+            tablePairs.forEach(p => {
+                knownBotCards.add(p.attack); botHand.push(p.attack);
+                if (p.defend) { knownBotCards.add(p.defend); botHand.push(p.defend); }
+            });
+            tablePairs = [];
+            refillHands();
+            isPlayerAttacking = true;
+            render();
+        });
+    }
+
+    function botAttackMore() {
+        if (isGameOver || isPlayerAttacking) return;
+
+        if (playerHand.length === 0) { botFinishRound(); return; }
+
+        const ranksOnTable = getRanksOnTable();
+        const validCards = botHand.filter(c => ranksOnTable.includes(c.rank));
+
+        if (validCards.length > 0 && tablePairs.length < maxAttackCards()) {
+            const cardToPlay = pickThrowInCard(validCards);
+            const idx = botHand.indexOf(cardToPlay);
+            botHand.splice(idx, 1);
+            tablePairs.push({ attack: cardToPlay, defend: null });
+            render();
+        } else {
+            botFinishRound();
+        }
+    }
+
+    function botFinishRound() {
+        if (isGameOver) return;
+        document.getElementById('status-text').innerText = "Бот: бито!";
+        say('bot', 'Бито');
+        scheduleBotMove(() => {
+            triggerBitoAnimation(() => {
+                isPlayerAttacking = true;
+                render();
+            });
+        }, 400);
+    }
+
+    function botAttackFirst() {
+        if (isGameOver || isPlayerAttacking) return;
+        if (botHand.length === 0 || playerHand.length === 0) { checkGameOver(); return; }
+        const cardToPlay = pickLeadCard();
+        const idx = botHand.indexOf(cardToPlay);
+        botHand.splice(idx, 1);
+        tablePairs.push({ attack: cardToPlay, defend: null });
+        render();
+    }
+
+
+    // Реплика над игроком: who = 'me' | 'bot'
+    const speechTimers = {};
+    function say(who, text) {
+        const el = document.getElementById('speech-' + who);
+        if (!el) return;
+        el.innerText = text;
+        el.classList.add('show');
+        clearTimeout(speechTimers[who]);
+        speechTimers[who] = setTimeout(() => el.classList.remove('show'), 1500);
+    }
+
+    function onBito() {
+        if (onlineActive) { onlineSend({ t: 'move', a: 'bito' }); return; }
+        if (isGameOver || isBotTurnPending) return;
+        say('me', 'Бито');
+        discardTableToBito();
+        isPlayerAttacking = false;
+        render();
+        scheduleBotMove(botAttackFirst, 500);
+    }
+
+    // Игрок берёт: сначала бот-атакующий может подкинуть ещё (как в настоящем дураке),
+    // и только потом игрок забирает всё со стола.
+    function onTake() {
+        if (onlineActive) { onlineSend({ t: 'move', a: 'take' }); return; }
+        if (isGameOver || isBotTurnPending || isPlayerAttacking || tablePairs.length === 0) return;
+        say('me', 'Беру');
+        document.getElementById('btn-take').disabled = true;
+        scheduleBotMove(botThrowInAfterTake, 800);
+    }
+
+    function botThrowInAfterTake() {
+        if (isGameOver) return;
+        const ranks = getRanksOnTable();
+        let valid = botHand.filter(c => ranks.includes(c.rank));
+        // на лёгком бот кидает что попало, на остальных не разбрасывается козырями
+        if (botDifficulty !== 'easy') valid = valid.filter(c => c.suit !== trumpCard.suit);
+        if (valid.length > 0 && tablePairs.length < attackCapFor(playerHand)) {
+            const card = pickThrowInCard(valid);
+            botHand.splice(botHand.indexOf(card), 1);
+            tablePairs.push({ attack: card, defend: null });
+            render();
+            document.getElementById('btn-take').disabled = true;
+            scheduleBotMove(botThrowInAfterTake, 700);
+            return;
+        }
+        finishPlayerTake();
+    }
+
+    function finishPlayerTake() {
+        // даём секунду рассмотреть последнюю подкинутую карту, потом карты улетают в руку
+        scheduleBotMove(() => {
+            isBotTurnPending = true;
+            flyTableCards('player-hand', () => {
+                isBotTurnPending = false;
+                if (isGameOver) return;
+                tablePairs.forEach(p => {
+                    knownPlayerCards.add(p.attack); playerHand.push(p.attack);
+                    if (p.defend) { knownPlayerCards.add(p.defend); playerHand.push(p.defend); }
+                });
+                tablePairs = [];
+                refillHands();
+                isPlayerAttacking = false;
+                render();
+                scheduleBotMove(botAttackFirst, 600);
+            });
+        }, 600);
+    }
+
+    // Добор карт: сначала тот, кто атаковал в этом раунде, потом защищавшийся —
+    // вызывается ДО переключения isPlayerAttacking на новую роль, поэтому текущее
+    // значение флага всегда указывает на "того, кто только что атаковал".
+    function refillHands() {
+        if (isPlayerAttacking) {
+            while (playerHand.length < 6 && deck.length > 0) playerHand.push(deck.pop());
+            while (botHand.length < 6 && deck.length > 0) botHand.push(deck.pop());
+        } else {
+            while (botHand.length < 6 && deck.length > 0) botHand.push(deck.pop());
+            while (playerHand.length < 6 && deck.length > 0) playerHand.push(deck.pop());
+        }
+        if (deck.length === 0 && trumpCard && !trumpCard.used) {
+            if (playerHand.length < 6) { playerHand.push(trumpCard); trumpCard.used = true; }
+            else if (botHand.length < 6) { botHand.push(trumpCard); trumpCard.used = true; }
+        }
+        sortPlayerHand();
+    }
+
+    updateWalletUI();
+    claimDailyBonus();
+</script>
+</body>
+</html>
