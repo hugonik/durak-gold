@@ -228,9 +228,9 @@
         content: ''; position: absolute; width: 62%; height: 62%; border-radius: 50%;
         border: calc(var(--card-width) * 0.03) solid var(--accent-gold); opacity: 0.55;
     }
-    .face-art { width: calc(var(--card-width) * 0.5); height: calc(var(--card-width) * 0.5); z-index: 1; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.25)); overflow: visible; }
+    .face-art { width: calc(var(--card-width) * 0.5); height: calc(var(--card-width) * 0.5); z-index: 1; overflow: visible; }
     .face-emblem.ace::before { opacity: 0.7; }
-    .ace-suit { font-size: calc(var(--card-width) * 0.5); line-height: 1; z-index: 1; text-shadow: 0 1px 1px rgba(0,0,0,0.2); }
+    .ace-suit { font-size: calc(var(--card-width) * 0.5); line-height: 1; z-index: 1; }
     .face-suit { font-size: calc(var(--card-width) * 0.19); line-height: 1; z-index: 1; }
 
     /* Рубашка карты подставляется через переменную --card-back-image (см. систему
