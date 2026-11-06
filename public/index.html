@@ -47,8 +47,18 @@
     .menu-overlay {
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
         background: radial-gradient(circle at center, #1c1e24 0%, #0f1012 100%);
-        display: flex; flex-direction: column; justify-content: center; align-items: center;
-        z-index: 200;
+        display: flex; flex-direction: column; justify-content: flex-start; align-items: center;
+        z-index: 200; overflow-y: auto; padding: 10px 0; box-sizing: border-box; -webkit-overflow-scrolling: touch;
+    }
+    /* центрирование, которое не обрезает содержимое сверху, если оно не влезло — меню просто прокручивается */
+    .menu-overlay > :first-child { margin-top: auto; }
+    .menu-overlay > :last-child { margin-bottom: auto; }
+    @media (max-height: 700px) {
+        .menu-logo { width: 96px; margin: 0 0 -6px; }
+        #main-menu .wallet { margin-bottom: 10px; padding: 4px 14px; font-size: 17px; }
+        #main-menu .menu-subtitle { margin-bottom: 14px; }
+        #main-menu .menu-btn { padding-top: 9px; padding-bottom: 9px; }
+        #main-menu .menu-options { gap: 8px; }
     }
     .menu-title {
         font-family: var(--font-display);
@@ -202,6 +212,14 @@
     /* Валюта «$» */
     .wallet { font-family: var(--font-display); font-weight: 800; font-size: 20px; letter-spacing: 2px; color: var(--gold-light);
         background: rgba(197,160,89,0.08); border: 1px solid rgba(197,160,89,0.4); border-radius: 999px; padding: 6px 18px; margin-bottom: 22px; }
+    .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; width: min(86vw, 340px); margin-top: 6px; }
+    .stat-tile { background: rgba(255,255,255,0.03); border: 1px solid rgba(197,160,89,0.28); border-radius: 14px; padding: 12px 8px; text-align: center; }
+    .stat-tile b { display: block; font-family: var(--font-display); font-size: 26px; font-weight: 800; color: var(--gold-light); letter-spacing: 1px; line-height: 1.1; }
+    .stat-tile span { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: #8d887b; font-weight: 600; }
+    .stats-table { width: min(86vw, 340px); margin-top: 16px; font-size: 14px; color: #cfc9ba; }
+    .stats-row { display: grid; grid-template-columns: 1.3fr 1fr 1fr 1fr; padding: 7px 4px; border-bottom: 1px solid rgba(197,160,89,0.15); text-align: center; }
+    .stats-row:first-child { color: #8d887b; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 600; }
+    .stats-row > :first-child { text-align: left; }
     .wallet small { font-family: var(--font-ui); font-weight: 600; font-size: 10px; letter-spacing: 2px; color: #8d887b; margin-left: 8px; text-transform: uppercase; }
     .collection-item.buying .collection-price { color: var(--gold-light); font-weight: 700; }
     .collection-item.locked.buying .collection-swatch { opacity: 0.85; filter: none; border-color: var(--gold-light); }
@@ -402,6 +420,7 @@
         <button class="menu-btn" onclick="startGame('transfer')">Переводной Дурак</button>
         <button class="menu-btn" id="btn-online-menu" style="display:none;" onclick="openOnlineMenu()">🌐 Играть онлайн</button>
         <button class="menu-btn collection-btn" onclick="openCollection()">🎴 Рубашка карт</button>
+        <button class="menu-btn collection-btn" onclick="openStats()">📊 Статистика</button>
         <button class="menu-btn collection-btn" id="btn-sound" onclick="toggleSound()">🔊 Звук: вкл</button>
         <div class="dev-tools" id="dev-tools" style="display:none;">
             <button class="btn-small" onclick="devAddCoins()">🛠 +1000 $</button>
@@ -417,6 +436,15 @@
     <div class="menu-subtitle">Выберите рубашку карт</div>
     <div class="collection-grid" id="collection-grid"></div>
     <button class="btn-small" style="margin-top:24px;" onclick="closeCollection()">← Назад</button>
+</div>
+
+<div class="menu-overlay" id="stats-menu" style="display:none;">
+    <div class="wallet" id="wallet-stats" style="margin-bottom:12px;"></div>
+    <div class="menu-title" style="font-size:26px;">Статистика</div>
+    <div class="menu-subtitle" id="stats-sub">Ваши партии</div>
+    <div class="stats-grid" id="stats-grid"></div>
+    <div class="stats-table" id="stats-table"></div>
+    <button class="btn-small" style="margin-top:24px;" onclick="closeStats()">← Назад</button>
 </div>
 
 <div class="menu-overlay" id="online-menu" style="display:none;">
@@ -665,11 +693,18 @@
     };
     const DAILY_BASE = 20, DAILY_STEP = 5, DAILY_MAX = 50;
 
-    function defaultWallet() { return { coins: START_COINS, wins: 0, games: 0, streak: 0, lastDaily: '', dayStreak: 0 }; }
+    function defaultStats() { const z = () => ({ w: 0, l: 0, d: 0 }); return { easy: z(), normal: z(), hard: z(), online: z() }; }
+    function defaultWallet() { return { coins: START_COINS, wins: 0, games: 0, streak: 0, bestStreak: 0, earned: 0, lastDaily: '', dayStreak: 0, stats: defaultStats() }; }
     function loadWallet() {
         try {
             const w = JSON.parse(localStorage.getItem(WALLET_KEY) || 'null');
-            if (w && typeof w.coins === 'number') return Object.assign(defaultWallet(), w);
+            if (w && typeof w.coins === 'number') {
+                const full = Object.assign(defaultWallet(), w);
+                const base = defaultStats();
+                Object.keys(base).forEach(k => { full.stats[k] = Object.assign(base[k], (w.stats || {})[k] || {}); });
+                full.bestStreak = Math.max(full.bestStreak || 0, full.streak || 0);
+                return full;
+            }
         } catch (e) {}
         return defaultWallet();
     }
@@ -690,14 +725,17 @@
         const table = onlineActive ? REWARDS.online : (REWARDS.offline[botDifficulty] || REWARDS.offline.normal);
         let gain = table[result] || 0, bonus = 0;
         w.games += 1;
+        const key = onlineActive ? 'online' : (REWARDS.offline[botDifficulty] ? botDifficulty : 'normal');
+        w.stats[key][result === 'win' ? 'w' : result === 'lose' ? 'l' : 'd'] += 1;
         if (result === 'win') {
-            w.wins += 1; w.streak += 1;
+            w.wins += 1; w.streak += 1; w.bestStreak = Math.max(w.bestStreak, w.streak);
             bonus = Math.min(25, (w.streak - 1) * 5);
         } else if (result === 'lose') {
             w.streak = 0;
         }
         gain += bonus;
         w.coins += gain;
+        w.earned += gain;
         saveWallet(w);
         updateWalletUI();
         return { gain, bonus, streak: w.streak };
@@ -865,6 +903,30 @@
         buyingId = null;
         updateWalletUI();
         renderCollectionGrid();
+    }
+
+    const STAT_NAMES = { easy: 'Лёгкий', normal: 'Средний', hard: 'Сложный', online: 'Онлайн' };
+    function renderStats() {
+        const w = loadWallet();
+        const rate = w.games > 0 ? Math.round(w.wins / w.games * 100) + '%' : '—';
+        const tile = (v, t) => `<div class="stat-tile"><b>${v}</b><span>${t}</span></div>`;
+        document.getElementById('stats-grid').innerHTML =
+            tile(w.games, 'Партий') + tile(w.wins, 'Побед') + tile(rate, 'Побед, %') + tile(w.streak, 'Серия') +
+            tile(w.bestStreak, 'Лучшая серия') + tile('$ ' + fmtCoins(w.earned), 'Заработано');
+        document.getElementById('stats-table').innerHTML =
+            '<div class="stats-row"><span>Режим</span><span>Победы</span><span>Пораж.</span><span>Ничьи</span></div>' +
+            Object.keys(STAT_NAMES).map(k => `<div class="stats-row"><span>${STAT_NAMES[k]}</span><span>${w.stats[k].w}</span><span>${w.stats[k].l}</span><span>${w.stats[k].d}</span></div>`).join('');
+        document.getElementById('stats-sub').innerText = w.games === 0 ? 'Сыграйте первую партию' : 'Ваши партии';
+        const el = document.getElementById('wallet-stats'); if (el) el.innerHTML = '$ ' + fmtCoins(w.coins);
+    }
+    function openStats() {
+        document.getElementById('main-menu').style.display = 'none';
+        document.getElementById('stats-menu').style.display = 'flex';
+        renderStats();
+    }
+    function closeStats() {
+        document.getElementById('stats-menu').style.display = 'none';
+        document.getElementById('main-menu').style.display = 'flex';
     }
 
     function closeCollection() {
