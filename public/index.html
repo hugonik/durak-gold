@@ -1147,14 +1147,18 @@
 
     // Выбор карты для отбоя. Возвращает карту или null (null на "сложном" уровне
     // означает, что бот сознательно решил не тратить последний козырь и лучше взять карты).
-    function pickDefendCard(validCards) {
+    function pickDefendCard(validCards, attackCard) {
         if (botDifficulty === 'easy') {
             return randomOf(validCards);
         }
 
         const sorted = [...validCards].sort(byWeakestFirst);
         const nonTrump = sorted.filter(c => c.suit !== trumpCard.suit);
-        if (nonTrump.length > 0) return nonTrump[0];
+        if (nonTrump.length > 0) {
+            // на среднем иногда играет не самой слабой картой — чтобы не быть предсказуемым роботом
+            if (botDifficulty === 'normal' && nonTrump.length > 1 && Math.random() < 0.12) return randomOf(nonTrump);
+            return nonTrump[0];
+        }
 
         // остались только козыри
         if (botDifficulty === 'hard') {
@@ -1163,6 +1167,10 @@
             if (trumpsLeft <= 1 && cardsStillInPlay > 8) {
                 return null; // бережём последний козырь, лучше взять карты
             }
+            // не жжём козырь ради мелкой карты, пока колода ещё большая, а брать придётся немного
+            const cheap = attackCard && attackCard.suit !== trumpCard.suit && RANK_VALUES[attackCard.rank] <= 10;
+            const toTake = tablePairs.length;
+            if (cheap && deck.length >= 6 && toTake <= 2 && trumpsLeft <= 3) return null;
         }
         return sorted[0];
     }
@@ -1176,6 +1184,8 @@
         const nonTrump = botHand.filter(c => c.suit !== trumpCard.suit);
         const pool = nonTrump.length > 0 ? nonTrump : botHand;
 
+        if (botDifficulty === 'normal' && pool.length > 1 && Math.random() < 0.15) return randomOf(pool);
+
         if (botDifficulty === 'hard') {
             // предпочитаем ранг, которого у нас 2+ штук — легче подкидывать дальше
             const counts = {};
@@ -1183,7 +1193,10 @@
             const pairRank = Object.keys(counts).find(r => counts[r] >= 2);
             if (pairRank) {
                 const candidates = pool.filter(c => c.rank === pairRank).sort(byWeakestFirst);
-                return candidates[0];
+                // пары разной силы: чаще идёт с младшей, но иногда с другой — чтобы не читался
+                return (Math.random() < 0.2 && Object.keys(counts).filter(r => counts[r] >= 2).length > 1)
+                    ? pool.filter(c => c.rank === randomOf(Object.keys(counts).filter(r => counts[r] >= 2)))[0] || candidates[0]
+                    : candidates[0];
             }
         }
 
@@ -2191,7 +2204,9 @@
 
         if (canBotTransfer) {
             const attackRank = tablePairs[0].attack.rank;
-            const transferCard = botHand.find(c => c.rank === attackRank);
+            let transferOptions = botHand.filter(c => c.rank === attackRank).sort(byWeakestFirst);
+            if (botDifficulty === 'hard' && deck.length > 0) transferOptions = transferOptions.filter(c => c.suit !== trumpCard.suit);
+            const transferCard = transferOptions[0];
             if (transferCard && shouldBotTransfer()) {
                 const idx = botHand.indexOf(transferCard);
                 botHand.splice(idx, 1);
@@ -2207,7 +2222,7 @@
         if (!undefendedPair) return;
 
         const validCards = botHand.filter(c => canBeat(undefendedPair.attack, c));
-        const cardToPlay = validCards.length > 0 ? pickDefendCard(validCards) : null;
+        const cardToPlay = validCards.length > 0 ? pickDefendCard(validCards, undefendedPair.attack) : null;
         if (cardToPlay) {
             const idx = botHand.indexOf(cardToPlay);
             botHand.splice(idx, 1);
@@ -2250,7 +2265,11 @@
         if (playerHand.length === 0) { botFinishRound(); return; }
 
         const ranksOnTable = getRanksOnTable();
-        const validCards = botHand.filter(c => ranksOnTable.includes(c.rank));
+        let validCards = botHand.filter(c => ranksOnTable.includes(c.rank));
+        if (botDifficulty !== 'easy' && deck.length > 0) {
+            const noTrumps = validCards.filter(c => c.suit !== trumpCard.suit);
+            validCards = noTrumps; // козыри не разбрасываем, пока в колоде ещё есть карты
+        }
 
         if (validCards.length > 0 && tablePairs.length < maxAttackCards()) {
             const cardToPlay = pickThrowInCard(validCards);
